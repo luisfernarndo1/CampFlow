@@ -1,4 +1,4 @@
 1:"$Sreact.fragment"
 2:I[39756,["/CampFlow/_next/static/chunks/463f4ca0d250d4d8.js","/CampFlow/_next/static/chunks/1d396ea9865d92fa.js","/CampFlow/_next/static/chunks/3677defb19fe9037.js","/CampFlow/_next/static/chunks/0f0c391858e5b16d.js"],"default"]
 3:I[37457,["/CampFlow/_next/static/chunks/463f4ca0d250d4d8.js","/CampFlow/_next/static/chunks/1d396ea9865d92fa.js","/CampFlow/_next/static/chunks/3677defb19fe9037.js","/CampFlow/_next/static/chunks/0f0c391858e5b16d.js"],"default"]
-0:{"buildId":"sK4wlTBtMfX-xV4upIUX8","rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"loading":null,"isPartial":false}
+0:{"buildId":"-yXqiLNBqLkS1D-vtUwQS","rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}]}]]}],"loading":null,"isPartial":false}
