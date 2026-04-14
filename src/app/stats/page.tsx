@@ -62,6 +62,12 @@ export default function StatsPage() {
         }
     };
 
+    const handleLock = () => {
+        setIsUnlocked(false);
+        localStorage.removeItem("statsUnlocked");
+        setPasswordInput("");
+    };
+
     const getDateRange = (r: TimeRange) => {
         let end = endOfDay(new Date());
         let start = subDays(end, 30);
@@ -143,7 +149,7 @@ export default function StatsPage() {
                 <div className="flex items-center justify-between space-y-2">
                     <h2 className="text-3xl font-bold tracking-tight">Dashboard Statistiche</h2>
                 <div className="flex items-center space-x-2">
-                    <Tabs value={range} onValueChange={(v) => setRange(v as TimeRange)} className="space-y-4">
+                    <Tabs value={range} onValueChange={(v) => setRange(v as TimeRange)} className="mr-2">
                         <TabsList>
                             <TabsTrigger value="7d">7 Giorni</TabsTrigger>
                             <TabsTrigger value="30d">30 Giorni</TabsTrigger>
@@ -151,6 +157,15 @@ export default function StatsPage() {
                             <TabsTrigger value="year">Quest'anno</TabsTrigger>
                         </TabsList>
                     </Tabs>
+                    <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={handleLock}
+                        className="h-9 w-9 shadow-sm"
+                        title="Blocca Dashboard"
+                    >
+                        <Lock className="h-4 w-4 text-muted-foreground" />
+                    </Button>
                 </div>
             </div>
 
