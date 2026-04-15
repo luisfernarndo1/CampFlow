@@ -109,22 +109,42 @@ EXCLUDE USING GIST (
 CREATE TABLE booking_guests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
-  
-  -- Dati anagrafici persona
-  full_name VARCHAR(255) NOT NULL,
-  birth_date DATE,
-  birth_place VARCHAR(255),
-  address TEXT,
-  
+
+  -- Anagrafica
+  full_name       VARCHAR(255) NOT NULL,
+  first_name      VARCHAR(100),
+  last_name       VARCHAR(100),
+  birth_date      DATE,
+  gender          VARCHAR(10),
+  birth_country   VARCHAR(100),
+  birth_province  VARCHAR(10),
+  birth_city      VARCHAR(150),
+  citizenship     VARCHAR(100),
+  nationality     VARCHAR(100), -- legacy alias for citizenship
+  is_head_of_family BOOLEAN NOT NULL DEFAULT false,
+
+  -- Residenza
+  address             TEXT,
+  residence_country   VARCHAR(100),
+  residence_province  VARCHAR(10),
+  residence_city      VARCHAR(150),
+  residence_zip       VARCHAR(10),
+
   -- Documento identità
-  document_type VARCHAR(50), -- carta_identita, passaporto, patente, etc
-  document_number VARCHAR(100),
-  nationality VARCHAR(100),
-  
+  document_type         VARCHAR(50),  -- carta_identita, passaporto, patente, etc
+  document_number       VARCHAR(100),
+  document_issue_date   DATE,
+  document_issuer       VARCHAR(150),
+  document_issue_city   VARCHAR(150),
+  document_issue_country VARCHAR(100),
+
+  -- Veicolo
+  license_plate VARCHAR(20),
+
   -- Tipo ospite
-  guest_type VARCHAR(20) NOT NULL DEFAULT 'adult' 
+  guest_type VARCHAR(20) NOT NULL DEFAULT 'adult'
     CHECK (guest_type IN ('adult', 'child', 'infant')),
-  
+
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

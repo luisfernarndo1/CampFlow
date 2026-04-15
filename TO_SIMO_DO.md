@@ -107,3 +107,32 @@ Crea 1 funzione SQL:
 **Tempo**: ⏱️ **5 minuti**  
 
 Non appena esegui la migrazione, vedrai i dati reali! 🚀
+
+---
+
+# 🚨 CRITICO: Migrazione Check-in - booking_guests (2026-04-15)
+
+## Problema
+Il check-in dà errore 500 "Errore salvataggio ospiti" perché la tabella `booking_guests` nel DB **non ha le colonne** richieste dalla form (residenza, documento, dati anagrafici estesi).
+
+## Azione Richiesta (2 minuti) ⚠️ BLOCCA IL CHECK-IN
+
+1. **Vai su** https://supabase.com/dashboard
+2. **Seleziona** il progetto CampFlow
+3. **Clicca** SQL Editor
+4. **Copia e incolla** il contenuto del file:
+   ```
+   /Users/simo/Downloads/DEV/CampFlow/supabase/migrations/incremental/add_booking_guests_checkin_fields.sql
+   ```
+5. **Clicca RUN** ✅
+
+## Verifica
+Dopo la migrazione, esegui questa query per confermare:
+```sql
+SELECT column_name FROM information_schema.columns
+WHERE table_name = 'booking_guests'
+ORDER BY ordinal_position;
+```
+Dovresti vedere le nuove colonne: `first_name`, `last_name`, `gender`, `birth_country`, `birth_province`, `birth_city`, `citizenship`, `is_head_of_family`, `residence_country`, `residence_province`, `residence_city`, `residence_zip`, `document_issue_date`, `document_issuer`, `document_issue_city`, `document_issue_country`, `license_plate`.
+
+**Status**: 🔴 BLOCCANTE — Il check-in NON funziona senza questa migrazione.

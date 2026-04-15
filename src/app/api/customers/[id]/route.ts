@@ -70,6 +70,35 @@ export async function PUT(
     }
 }
 
+export async function PATCH(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        const supabase = supabaseAdmin;
+        const body = await request.json();
+
+        // Separate potential relational fields that can't be updated directly on 'customers'
+        const { group, ...updateData } = body;
+
+        const { data, error } = await supabase
+            .from('customers')
+            .update(updateData)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            throw error;
+        }
+
+        return NextResponse.json(data);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
 export async function DELETE(
     request: Request,
     { params }: { params: Promise<{ id: string }> } // Params is now a Promise

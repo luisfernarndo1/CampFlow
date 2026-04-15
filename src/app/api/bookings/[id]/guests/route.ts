@@ -43,6 +43,21 @@ export async function PUT(
             gender: g.gender || null,
             citizenship: g.citizenship || null,
             is_head_of_family: g.is_head_of_family || false,
+            // Residenza (only for Head of Family, but stored for all if provided)
+            address: g.address || null,
+            residence_country: g.residence_country || null,
+            residence_province: g.residence_province || null,
+            residence_city: g.residence_city || null,
+            residence_zip: g.residence_zip || null,
+            // Documento
+            document_type: g.document_type || null,
+            document_number: g.document_number || null,
+            document_issue_date: g.document_issue_date || null,
+            document_issuer: g.document_issuer || null,
+            document_issue_city: g.document_issue_city || null,
+            document_issue_country: g.document_issue_country || null,
+            // Veicolo
+            license_plate: g.license_plate || null,
             // Legacy/Computed
             full_name: `${g.first_name} ${g.last_name}`.trim(),
             guest_type: g.guest_type || 'adult'
@@ -55,8 +70,11 @@ export async function PUT(
             .select();
 
         if (insertError) {
-            console.error('Error inserting guests:', insertError);
-            throw new Error('Failed to insert guests');
+            console.error('Error inserting guests — Supabase error:', JSON.stringify(insertError, null, 2));
+            return NextResponse.json(
+                { error: 'Failed to insert guests', detail: insertError.message, hint: insertError.hint },
+                { status: 500 }
+            );
         }
 
         return NextResponse.json({ success: true, guests: data });
