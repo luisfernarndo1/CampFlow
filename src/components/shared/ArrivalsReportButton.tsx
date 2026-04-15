@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { FileText, Loader2, CalendarIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { getTodayItaly } from '@/lib/utils';
@@ -41,30 +41,40 @@ const genderLabel = (g: string | null | undefined): string => {
 
 interface ArrivalsReportButtonProps {
     defaultDate?: string;
+    view?: 'today' | 'tomorrow' | 'week';
 }
 
-export function ArrivalsReportButton({ defaultDate }: ArrivalsReportButtonProps) {
-    const [open, setOpen] = useState(false);
-    const [date, setDate] = useState(defaultDate || getTodayItaly());
+export function ArrivalsReportButton({ defaultDate, view }: ArrivalsReportButtonProps) {
     const [loading, setLoading] = useState(false);
 
-    // Update internal date when defaultDate prop changes (e.g. view toggle)
-    // and the dialog is actually opened
-    useEffect(() => {
-        if (defaultDate) {
-            setDate(defaultDate);
-        }
-    }, [defaultDate, open]);
+    // Using defaultDate prop directly for calculation
+    // removed the dialog "open" state
 
     const handleGenerate = async () => {
+        if (loading) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/arrivals/print?date=${date}`);
+            const currentDate = defaultDate || getTodayItaly();
+            let url = `/api/arrivals/print?date=${currentDate}`;
+
+            // If in week view, we fetch the range (next 7 days from starting date)
+            if (view === 'week') {
+                const startDate = currentDate;
+                const endDate = format(addDays(new Date(currentDate), 6), 'yyyy-MM-dd');
+                url = `/api/arrivals/print?startDate=${startDate}&endDate=${endDate}`;
+            }
+
+            const res = await fetch(url);
             if (!res.ok) throw new Error('Failed to fetch arrivals');
             const data = await res.json();
-            generatePDF(date, data.arrivals);
+
+            if (view === 'week') {
+                generateWeeklyPDF(currentDate, data.arrivals);
+            } else {
+                generatePDF(currentDate, data.arrivals);
+            }
+
             toast.success('Riepilogo generato con successo!');
-            setOpen(false);
         } catch (error) {
             console.error(error);
             toast.error('Errore durante la generazione del riepilogo');
@@ -88,7 +98,7 @@ export function ArrivalsReportButton({ defaultDate }: ArrivalsReportButtonProps)
             doc.setFontSize(15);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(255, 255, 255);
-            doc.text('REGISTRO ARRIVI', MARGIN, 13);
+            doc.text('REGISTRO ARRIVI GIORNALIERO', MARGIN, 13);
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(203, 213, 225); // slate-300
@@ -305,47 +315,195 @@ export function ArrivalsReportButton({ defaultDate }: ArrivalsReportButtonProps)
         doc.save(`arrivi ${fnameObj}.pdf`);
     };
 
+    const generateWeeklyPDF = (selectedDate: string, arrivals: any[]) => {
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const PAGE_W = 210;
+        const MARGIN = 14;
+        const CONTENT_W = PAGE_W - MARGIN * 2;
+
+        const drawPageHeader = (title: string, subtitle: string) => {
+            doc.setFillColor(30, 41, 59); // slate-800
+            doc.rect(0, 0, PAGE_W, 22, 'F');
+            doc.setFontSize(15);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(255, 255, 255);
+            doc.text(title, MARGIN, 13);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(203, 213, 225); // slate-300
+            doc.text(subtitle, MARGIN, 19);
+        };
+
+        // Group arrivals by date
+        const grouped: Record<string, any[]> = {};
+        arrivals.forEach(a => {
+            const d = a.booking_period.match(/\[([^,]+),/)?.[1] || 'Sconosciuto';
+            if (!grouped[d]) grouped[d] = [];
+            grouped[d].push(a);
+        });
+
+        const sortedDates = Object.keys(grouped).sort();
+        const startD = new Date(selectedDate);
+        const endD = addDays(startD, 6);
+        const subtitleStr = `Settimana: ${format(startD, 'dd/MM')} - ${format(endD, 'dd/MM/yyyy')}   |   Totale: ${arrivals.length}   |   Generato il ${format(new Date(), 'dd/MM HH:mm')}`;
+
+        drawPageHeader('REGISTRO ARRIVI SETTIMANALE', subtitleStr);
+        let y = 30;
+
+        if (arrivals.length === 0) {
+            doc.setFontSize(11);
+            doc.text('Nessun arrivo previsto per questa settimana.', MARGIN, y + 10);
+            doc.save(`arrivi settimana ${format(startD, 'dd MM yyyy')}.pdf`);
+            return;
+        }
+
+        sortedDates.forEach((dateStr, dIdx) => {
+            const dayArrivals = grouped[dateStr];
+            const parsedDay = new Date(dateStr + 'T12:00:00');
+
+            // Start a new page for each day (except first day unless it's already full)
+            if (dIdx > 0 || y > 240) {
+                doc.addPage();
+                drawPageHeader('REGISTRO ARRIVI SETTIMANALE', subtitleStr);
+                y = 30;
+            }
+
+            doc.setDrawColor(226, 232, 240);
+            doc.setLineWidth(0.5);
+            doc.line(MARGIN, y, PAGE_W - MARGIN, y);
+            y += 8;
+
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(15, 23, 42);
+            doc.text(format(parsedDay, 'EEEE d MMMM yyyy', { locale: it }).toUpperCase(), MARGIN, y);
+            y += 6;
+
+            dayArrivals.forEach((booking, idx) => {
+                // Reuse logic from single PDF or implement directly
+                // For simplicity and grouping, we'll implement a compact version or call a shared helper
+                // Given the requirement "tenendo il template di quello singolo giornaliero"
+                // I will extract the booking render logic into a function
+                y = renderBookingCard(doc, booking, y, MARGIN, CONTENT_W, PAGE_W, () => {
+                    doc.addPage();
+                    drawPageHeader('REGISTRO ARRIVI SETTIMANALE', subtitleStr);
+                    return 30;
+                });
+                y += 10;
+            });
+
+            y += 5;
+        });
+
+        // Footer
+        const totalPages = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            doc.setFontSize(7.5);
+            doc.setTextColor(148, 163, 184);
+            doc.text(`Pagina ${i} di ${totalPages}  —  CampFlow Weekly Report`, PAGE_W / 2, 292, { align: 'center' });
+        }
+
+        doc.save(`arrivi settimana ${format(startD, 'dd MM yyyy')}.pdf`);
+    };
+
+    /**
+     * Shared render function for a single booking card
+     */
+    const renderBookingCard = (doc: jsPDF, booking: any, y: number, MARGIN: number, CONTENT_W: number, PAGE_W: number, onNewPage: () => number): number => {
+        const isCheckedIn = booking.status === 'checked_in';
+        const customer = booking.customer || {};
+        const pitch = booking.pitch || {};
+        const guests: any[] = booking.guests || [];
+        const headGuest = guests.find((g: any) => g.is_head_of_family) || guests[0] || null;
+        const otherGuests = headGuest ? guests.filter((g: any) => g.id !== headGuest.id) : [];
+        const hg = (field: string) => headGuest?.[field] || customer[field] || null;
+
+        const CARD_HEADER_H = 14;
+        if (y + CARD_HEADER_H + 40 > 285) { y = onNewPage(); }
+
+        doc.setFillColor(241, 245, 249);
+        doc.setDrawColor(203, 213, 225);
+        doc.rect(MARGIN, y, CONTENT_W, CARD_HEADER_H, 'FD');
+
+        doc.setFillColor(isCheckedIn ? 22 : 220, isCheckedIn ? 163 : 38, isCheckedIn ? 74 : 38);
+        doc.roundedRect(MARGIN + 2, y + 2, 28, 10, 2, 2, 'F');
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(255, 255, 255);
+        doc.text(`Piaz. ${val(pitch.number)}`, MARGIN + 5, y + 8.5);
+
+        const headName = `${hg('first_name') || ''} ${hg('last_name') || ''}`.trim() || 'Cliente Sconosciuto';
+        doc.setFontSize(11);
+        doc.setTextColor(15, 23, 42);
+        doc.text(headName, MARGIN + 34, y + 9);
+
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 116, 139);
+        doc.text(`${booking.guests_count} ospiti`, PAGE_W - MARGIN - 2, y + 9, { align: 'right' });
+
+        y += CARD_HEADER_H;
+
+        if (!isCheckedIn) {
+            doc.setFillColor(254, 242, 242);
+            doc.setDrawColor(252, 165, 165);
+            doc.rect(MARGIN, y, CONTENT_W, 22, 'FD');
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(185, 28, 28);
+            doc.text('⚠  CHECK-IN DA EFFETTUARE', MARGIN + 4, y + 8);
+            doc.setFontSize(8.5);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(153, 27, 27);
+            const refLine = `Riferimento: ${val(customer.first_name)} ${val(customer.last_name)}   |   Tel: ${val(customer.phone)}`;
+            doc.text(refLine, MARGIN + 4, y + 16);
+            y += 28;
+        } else {
+            y += 2;
+            sectionTitle(doc, 'CAPOFAMIGLIA', MARGIN, y, CONTENT_W, [37, 99, 235]);
+            y += 7;
+            const anaData: [string, string][] = [
+                ['Anagrafica', `${val(hg('first_name'))} ${val(hg('last_name'))} (${genderLabel(hg('gender'))}) — NATO A ${val(hg('birth_city'))} IL ${fmtDate(hg('birth_date'))}`],
+                ['Residenza', `${val(hg('address'))}, ${val(hg('residence_city'))} (${val(hg('residence_province'))}) — ${val(hg('residence_country'))}`],
+                ['Documento', `${docTypeLabel(hg('document_type'))} N. ${val(hg('document_number'))} RILASC. DA ${val(hg('document_issuer'))} IL ${fmtDate(hg('document_issue_date'))}`],
+                ['Veicolo', `Targa: ${val(hg('license_plate'))}`],
+            ];
+            y = renderKeyValueTable(doc, anaData, MARGIN, y, CONTENT_W);
+
+            if (otherGuests.length > 0) {
+                if (y + 20 > 285) { y = onNewPage(); }
+                sectionTitle(doc, `ALTRI OSPITI (${otherGuests.length})`, MARGIN, y, CONTENT_W, [100, 116, 139]);
+                y += 6;
+                const guestsSummary = otherGuests.map((g, i) => `${i + 2}. ${val(g.first_name)} ${val(g.last_name)} (${genderLabel(g.gender)}) - NATO IL ${fmtDate(g.birth_date)}`).join('\n');
+
+                doc.setFontSize(7.5);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(15, 23, 42);
+                const lines = doc.splitTextToSize(guestsSummary, CONTENT_W - 10);
+                doc.text(lines, MARGIN + 5, y + 4);
+                y += (lines.length * 4) + 6;
+            }
+        }
+        return y;
+    };
+
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button variant="outline" className="gap-2 bg-background">
-                    <FileText className="h-4 w-4" />
-                    <span className="hidden sm:inline">Stampa Arrivi</span>
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle>Genera Riepilogo Arrivi</DialogTitle>
-                    <DialogDescription>
-                        Seleziona la data per cui vuoi generare il foglio di riepilogo PDF con
-                        tutti i dati inseriti durante il check-in.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-4">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Data degli arrivi</label>
-                        <div className="relative">
-                            <Input
-                                type="date"
-                                value={date}
-                                onChange={(e) => setDate(e.target.value)}
-                                className="pl-10"
-                            />
-                            <CalendarIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        </div>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => setOpen(false)}>Annulla</Button>
-                    <Button onClick={handleGenerate} disabled={loading}>
-                        {loading
-                            ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            : <FileText className="mr-2 h-4 w-4" />}
-                        Genera PDF
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <Button
+            variant="outline"
+            className="gap-2 bg-background hover:bg-muted font-semibold transition-all active:scale-95"
+            onClick={handleGenerate}
+            disabled={loading}
+        >
+            {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+                <FileText className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">
+                {loading ? 'Generazione...' : 'Stampa Arrivi'}
+            </span>
+        </Button>
     );
 }
 

@@ -1274,3 +1274,9 @@ Created a reusable `CheckInDialog` component that:
 - [2026-04-15 13:20]: Fix Bug Report Arrivi
   - *Details*: Risolto errore "useEffect is not defined" nel componente ArrivalsReportButton.
 
+- [2026-04-15 13:25]: Fix 500 Errore Stampa Report
+  - *Details*: Risolto un errore di riferimento variabile (`targetDate` non definito) nell'endpoint `/api/arrivals/print` che causava il fallimento della generazione PDF.
+
+- [2026-04-15 13:27]: Paginazione Settimanale per Giorno
+  - *Details*: Aggiornato il report settimanale in modo che ogni giorno inizi su una nuova pagina, evitando sovrapposizioni e migliorando la leggibilità.
+
