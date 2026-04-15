@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { DashboardEvent } from '@/types/dashboard';
-import { CalendarIcon, UserIcon, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { CalendarIcon, UserIcon, ArrowDownCircle, ArrowUpCircle, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { useState } from 'react';
@@ -65,7 +65,7 @@ export function GuestCard({ event, type, onRefresh }: GuestCardProps) {
 
     return (
         <>
-            <Card className={`p-4 transition-all hover:shadow-md ${theme.border}`}>
+            <Card className={`p-4 transition-all hover:shadow-md ${theme.border} ${((isArrival && event.status === 'checked_in') || (!isArrival && event.status === 'checked_out')) ? 'bg-muted/30 shadow-none' : 'bg-card'}`}>
                 <div className="flex flex-col md:flex-row md:items-center gap-4 justify-between">
 
                     {/* Left Section: Icon & Main Info */}
@@ -105,12 +105,24 @@ export function GuestCard({ event, type, onRefresh }: GuestCardProps) {
                             {event.pitches.number}
                         </Badge>
 
-                        {(!isArrival && event.status === 'checked_out') ? (
-                            <Badge variant="secondary" className="px-4 py-2 bg-green-100 text-green-700 hover:bg-green-100">
-                                Completato
+                        {isArrival && event.status === 'checked_in' ? (
+                            <div className="flex flex-col sm:flex-row items-center gap-2">
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="h-8 rounded-full text-[11px] font-bold px-4 border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors" 
+                                    onClick={handleButtonClick}
+                                >
+                                    Visualizza dati
+                                </Button>
+                            </div>
+                        ) : !isArrival && event.status === 'checked_out' ? (
+                            <Badge variant="secondary" className="px-4 py-2 bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 hover:bg-blue-50 flex items-center gap-1.5 border-blue-200/50">
+                                <Check className="h-4 w-4" />
+                                <span className="font-semibold uppercase text-[10px] tracking-wider">Check-out Completato</span>
                             </Badge>
                         ) : (
-                            <Button size="sm" className={`${theme.button} px-6`} onClick={handleButtonClick}>
+                            <Button size="sm" className={`${theme.button} px-6 rounded-full font-bold shadow-sm transition-transform active:scale-95`} onClick={handleButtonClick}>
                                 {isArrival ? 'Check-in' : 'Check-out'}
                             </Button>
                         )}

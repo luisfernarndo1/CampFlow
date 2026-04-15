@@ -487,7 +487,8 @@ export function CheckInDialog({ open, onOpenChange, booking, event, onClose, onS
                                     {sending ? <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvataggio...
                                     </> : <>
-                                        <Check className="mr-2 h-4 w-4" /> Conferma Check-in
+                                        <Check className="mr-2 h-4 w-4" /> 
+                                        { (currentBooking?.status === 'checked_in' || event?.status === 'checked_in') ? 'Salva Modifiche' : 'Conferma Check-in' }
                                     </>}
                                 </Button>
                             </div>

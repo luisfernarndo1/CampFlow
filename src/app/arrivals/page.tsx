@@ -64,11 +64,20 @@ export default function ArrivalsPage() {
         setView(newView);
     };
 
-    const filteredArrivals = data?.arrivals.filter(arrival =>
-        arrival.customers.first_name.toLowerCase().includes(filter.toLowerCase()) ||
-        arrival.customers.last_name.toLowerCase().includes(filter.toLowerCase()) ||
-        arrival.pitches.number.includes(filter)
-    ) || [];
+    const filteredArrivals = data?.arrivals
+        .filter(arrival =>
+            arrival.customers.first_name.toLowerCase().includes(filter.toLowerCase()) ||
+            arrival.customers.last_name.toLowerCase().includes(filter.toLowerCase()) ||
+            arrival.pitches.number.includes(filter)
+        )
+        .sort((a, b) => {
+            // Pending arrivals first
+            if (a.status === 'checked_in' && b.status !== 'checked_in') return 1;
+            if (a.status !== 'checked_in' && b.status === 'checked_in') return -1;
+            return 0;
+        }) || [];
+
+    const completedCount = data?.arrivals.filter(a => a.status === 'checked_in').length || 0;
 
     // Group arrivals by date for Week view
     const groupedArrivals: Record<string, DashboardEvent[]> = {};
@@ -104,7 +113,7 @@ export default function ArrivalsPage() {
                                     Arrivi
                                     {!loading && data && (
                                         <span className="text-lg font-medium text-muted-foreground ml-2">
-                                            ({data.total_arrivals})
+                                            ({completedCount}/{data.total_arrivals} completati)
                                         </span>
                                     )}
                                 </h1>
@@ -176,10 +185,36 @@ export default function ArrivalsPage() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="space-y-3">
-                                    {filteredArrivals.map((arrival) => (
-                                        <GuestCard key={arrival.id} event={arrival} type="arrival" onRefresh={loadArrivals} />
-                                    ))}
+                                <div className="space-y-8">
+                                    {/* Pending Arrivals */}
+                                    <div className="space-y-3">
+                                        {filteredArrivals.filter(a => a.status !== 'checked_in').map((arrival) => (
+                                            <GuestCard key={arrival.id} event={arrival} type="arrival" onRefresh={loadArrivals} />
+                                        ))}
+                                        {filteredArrivals.filter(a => a.status !== 'checked_in').length === 0 && (
+                                            <div className="text-center py-8 bg-muted/20 rounded-xl border-2 border-dashed border-muted">
+                                                <p className="text-muted-foreground italic text-sm">Tutti i check-in di {view === 'today' ? 'oggi' : 'domani'} completati!</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Completed Arrivals */}
+                                    {filteredArrivals.some(a => a.status === 'checked_in') && (
+                                        <div className="space-y-3">
+                                            <div className="relative flex items-center py-4">
+                                                <div className="flex-grow h-px bg-border"></div>
+                                                <span className="flex-shrink-0 mx-4 text-[10px] font-bold text-green-600 dark:text-green-400 tracking-[0.2em] uppercase">
+                                                    Completati
+                                                </span>
+                                                <div className="flex-grow h-px bg-border"></div>
+                                            </div>
+                                            <div className="space-y-3">
+                                                {filteredArrivals.filter(a => a.status === 'checked_in').map((arrival) => (
+                                                    <GuestCard key={arrival.id} event={arrival} type="arrival" onRefresh={loadArrivals} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
