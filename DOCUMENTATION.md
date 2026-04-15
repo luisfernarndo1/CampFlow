@@ -1240,3 +1240,10 @@ Created a reusable `CheckInDialog` component that:
 [2026-04-14]: Statistics Page Password Protection
 * Details: Added a lock screen to the statistics page that blurs the content and requires a password to view.
 * Tech Notes: Implemented using React `useState` and `useEffect` with `localStorage` for session persistence. Reads access code from `NEXT_PUBLIC_STATS_PSW` environment variable. Uses `lucide-react` for icons and standard UI components (`Input`, `Button`).
+
+- [2026-04-15 11:11:36]: Feature: Arrivals Daily PDF Report
+  - *Details*: Implemented a feature to generate a professional PDF summary for a specific day's arrivals (defaults to today). Checks check-in completeness and alerts in red if data is missing. Presents full details for the head of the family and other guests.
+  - *Tech Notes*: Added /api/arrivals/print endpoint. Created arrivals report component. Installed and used jspdf and jspdf-autotable. Updated src/app/arrivals/page.tsx to include the action button.
+- [2026-04-15 11:34:30]: Fix: City Selection Reset & Form Enhancement
+  - *Details*: Fixed a bug where selecting a city in the guest form would reset the field due to state race conditions. Improved the form by adding autocompletion for Residence and Document Issue cities.
+  - *Tech Notes*: Implemented 'handleChanges' in GuestForm.tsx to update multiple fields atomically. Integrated MunicipalityAutocomplete and ProvinceAutocomplete into Residence and Document sections.

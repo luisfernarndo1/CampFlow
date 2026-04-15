@@ -64,6 +64,10 @@ export function GuestForm({
         onChange(index, { ...guest, [field]: value });
     };
 
+    const handleChanges = (changes: Partial<GuestData>) => {
+        onChange(index, { ...guest, ...changes });
+    };
+
     const isItaly = (s: string) => !s || s.toLowerCase() === 'italia';
 
     return (
@@ -206,9 +210,11 @@ export function GuestForm({
                                 <MunicipalityAutocomplete
                                     value={guest.birth_city}
                                     onSelect={(c) => {
-                                        handleChange('birth_city', c.nome);
-                                        handleChange('birth_province', c.sigla);
-                                        if (!guest.birth_country) handleChange('birth_country', 'Italia');
+                                        handleChanges({
+                                            birth_city: c.nome,
+                                            birth_province: c.sigla,
+                                            birth_country: guest.birth_country || 'Italia'
+                                        });
                                     }}
                                     placeholder="Cerca comune..."
                                     className={cn("h-9 bg-background/80", errors.birth_city && "border-destructive")}
@@ -260,11 +266,26 @@ export function GuestForm({
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
                                         <Label className={cn("text-xs text-muted-foreground", errors.residence_city && "text-destructive")}>Comune</Label>
-                                        <Input
-                                            value={guest.residence_city || ''}
-                                            onChange={e => handleChange('residence_city', e.target.value)}
-                                            className={cn(errors.residence_city && "border-destructive", "bg-background/80")}
-                                        />
+                                        {isItaly(guest.residence_country || 'Italia') ? (
+                                            <MunicipalityAutocomplete
+                                                value={guest.residence_city}
+                                                onSelect={(c) => {
+                                                    handleChanges({
+                                                        residence_city: c.nome,
+                                                        residence_province: c.sigla,
+                                                        residence_country: guest.residence_country || 'Italia'
+                                                    });
+                                                }}
+                                                placeholder="Cerca comune..."
+                                                className={cn("h-9 bg-background/80", errors.residence_city && "border-destructive")}
+                                            />
+                                        ) : (
+                                            <Input
+                                                value={guest.residence_city || ''}
+                                                onChange={e => handleChange('residence_city', e.target.value)}
+                                                className={cn(errors.residence_city && "border-destructive", "bg-background/80")}
+                                            />
+                                        )}
                                     </div>
                                     <div className="space-y-1">
                                         <Label className={cn("text-xs text-muted-foreground", errors.residence_zip && "text-destructive")}>CAP</Label>
@@ -276,11 +297,20 @@ export function GuestForm({
                                     </div>
                                     <div className="space-y-1">
                                         <Label className={cn("text-xs text-muted-foreground", errors.residence_province && "text-destructive")}>Provincia</Label>
-                                        <Input
-                                            value={guest.residence_province || ''}
-                                            onChange={e => handleChange('residence_province', e.target.value)}
-                                            className={cn(errors.residence_province && "border-destructive", "bg-background/80")}
-                                        />
+                                        {isItaly(guest.residence_country || 'Italia') ? (
+                                            <ProvinceAutocomplete
+                                                value={guest.residence_province}
+                                                onSelect={(p) => handleChange('residence_province', p.sigla)}
+                                                placeholder="RM"
+                                                className={cn("h-9 bg-background/80", errors.residence_province && "border-destructive")}
+                                            />
+                                        ) : (
+                                            <Input
+                                                value={guest.residence_province || ''}
+                                                onChange={e => handleChange('residence_province', e.target.value)}
+                                                className={cn(errors.residence_province && "border-destructive", "bg-background/80")}
+                                            />
+                                        )}
                                     </div>
                                     <div className="space-y-1">
                                         <Label className={cn("text-xs text-muted-foreground", errors.residence_country && "text-destructive")}>Stato</Label>
@@ -351,11 +381,25 @@ export function GuestForm({
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
                                         <Label className={cn("text-xs text-muted-foreground", errors.document_issue_city && "text-destructive")}>Comune Ril.</Label>
-                                        <Input
-                                            value={guest.document_issue_city || ''}
-                                            onChange={e => handleChange('document_issue_city', e.target.value)}
-                                            className={cn(errors.document_issue_city && "border-destructive", "bg-background/80")}
-                                        />
+                                        {isItaly(guest.document_issue_country || 'Italia') ? (
+                                            <MunicipalityAutocomplete
+                                                value={guest.document_issue_city}
+                                                onSelect={(c) => {
+                                                    handleChanges({
+                                                        document_issue_city: c.nome,
+                                                        document_issue_country: guest.document_issue_country || 'Italia'
+                                                    });
+                                                }}
+                                                placeholder="Cerca comune..."
+                                                className={cn("h-9 bg-background/80", errors.document_issue_city && "border-destructive")}
+                                            />
+                                        ) : (
+                                            <Input
+                                                value={guest.document_issue_city || ''}
+                                                onChange={e => handleChange('document_issue_city', e.target.value)}
+                                                className={cn(errors.document_issue_city && "border-destructive", "bg-background/80")}
+                                            />
+                                        )}
                                     </div>
                                     <div className="space-y-1">
                                         <Label className={cn("text-xs text-muted-foreground", errors.document_issue_country && "text-destructive")}>Stato Ril.</Label>

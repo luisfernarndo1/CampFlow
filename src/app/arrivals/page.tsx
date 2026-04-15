@@ -11,6 +11,7 @@ import { DashboardData, DashboardEvent } from '@/types/dashboard';
 import { GuestCard } from '@/components/shared/GuestCard';
 import { DateToggle } from '@/components/shared/DateToggle';
 import { Input } from '@/components/ui/input';
+import { ArrivalsReportButton } from '@/components/shared/ArrivalsReportButton';
 
 type ViewType = 'today' | 'tomorrow' | 'week';
 
@@ -117,8 +118,8 @@ export default function ArrivalsPage() {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3 w-full md:w-auto">
-                            <div className="relative flex-1 md:w-64">
+                        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap md:flex-nowrap">
+                            <div className="relative flex-1 md:w-64 min-w-[200px]">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Cerca ospite o piazzola..."
@@ -127,7 +128,10 @@ export default function ArrivalsPage() {
                                     onChange={(e) => setFilter(e.target.value)}
                                 />
                             </div>
-                            <DateToggle currentView={view} onToggle={handleViewToggle} />
+                            <div className="flex items-center gap-2">
+                                <DateToggle currentView={view} onToggle={handleViewToggle} />
+                                <ArrivalsReportButton />
+                            </div>
                         </div>
                     </div>
                 </div>
