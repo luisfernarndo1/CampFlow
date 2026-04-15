@@ -12,6 +12,33 @@ import { getTodayItaly } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+// Helper to display a date string as dd/MM/yyyy or 'N/D'
+const fmtDate = (d: string | null | undefined): string => {
+    if (!d) return 'N/D';
+    try { return format(new Date(d), 'dd/MM/yyyy'); } catch { return 'N/D'; }
+};
+
+// Helper to display value or 'N/D'
+const val = (v: string | null | undefined): string => v?.trim() || 'N/D';
+
+// Map document_type DB value to Italian label
+const docTypeLabel = (t: string | null | undefined): string => {
+    const map: Record<string, string> = {
+        carta_identita: "Carta d'Identità",
+        passaporto: 'Passaporto',
+        patente: 'Patente',
+        altro: 'Altro',
+    };
+    return t ? (map[t] || t) : 'N/D';
+};
+
+// Map gender DB value to Italian label
+const genderLabel = (g: string | null | undefined): string => {
+    if (g === 'M') return 'Maschio';
+    if (g === 'F') return 'Femmina';
+    return 'N/D';
+};
+
 export function ArrivalsReportButton() {
     const [open, setOpen] = useState(false);
     const [date, setDate] = useState(getTodayItaly());
@@ -23,7 +50,6 @@ export function ArrivalsReportButton() {
             const res = await fetch(`/api/arrivals/print?date=${date}`);
             if (!res.ok) throw new Error('Failed to fetch arrivals');
             const data = await res.json();
-            
             generatePDF(date, data.arrivals);
             toast.success('Riepilogo generato con successo!');
             setOpen(false);
@@ -36,137 +62,234 @@ export function ArrivalsReportButton() {
     };
 
     const generatePDF = (selectedDate: string, arrivals: any[]) => {
-        const doc = new jsPDF();
-        const parsedDate = new Date(selectedDate);
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const parsedDate = new Date(selectedDate + 'T12:00:00');
         const formattedDate = format(parsedDate, 'dd MMMM yyyy', { locale: it });
-        
-        // Header
-        doc.setFontSize(22);
-        doc.setTextColor(33, 37, 41);
-        doc.text(`Riepilogo Arrivi`, 14, 20);
-        
-        doc.setFontSize(14);
-        doc.setTextColor(108, 117, 125);
-        doc.text(`Data: ${formattedDate}  |  Totale prenotazioni in arrivo: ${arrivals.length}`, 14, 28);
-        
-        doc.setLineWidth(0.5);
-        doc.setDrawColor(200, 200, 200);
-        doc.line(14, 32, 196, 32);
+        const PAGE_W = 210;
+        const MARGIN = 14;
+        const CONTENT_W = PAGE_W - MARGIN * 2;
 
-        let startY = 40;
-        
+        // ─── PAGE HEADER ───────────────────────────────────────────────
+        const drawPageHeader = () => {
+            doc.setFillColor(30, 41, 59); // slate-800
+            doc.rect(0, 0, PAGE_W, 22, 'F');
+            doc.setFontSize(15);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(255, 255, 255);
+            doc.text('REGISTRO ARRIVI', MARGIN, 13);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(203, 213, 225); // slate-300
+            doc.text(
+                `Data: ${formattedDate}   |   Prenotazioni: ${arrivals.length}   |   Generato il ${format(new Date(), 'dd/MM/yyyy HH:mm')}`,
+                MARGIN, 19
+            );
+        };
+
+        drawPageHeader();
+        let y = 30;
+
         if (arrivals.length === 0) {
-            doc.setFontSize(12);
-            doc.text('Nessun arrivo previsto per questa data.', 14, startY);
+            doc.setFontSize(11);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Nessun arrivo previsto per questa data.', MARGIN, y + 10);
+            const fnameObj = format(parsedDate, 'dd_MMMM_yyyy', { locale: it }).toLowerCase();
+            doc.save(`arrivi_${fnameObj}.pdf`);
+            return;
         }
 
+        // ─── PER OGNI PRENOTAZIONE ────────────────────────────────────
         arrivals.forEach((booking, idx) => {
             const isCheckedIn = booking.status === 'checked_in';
-            const pitchLabel = booking.pitch ? booking.pitch.number : 'N/D';
             const customer = booking.customer || {};
-            const headCustName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Cliente Sconosciuto';
-            
-            // Check page break
-            if (startY > 250) {
+            const pitch = booking.pitch || {};
+            const guests: any[] = booking.guests || [];
+
+            // Find head of family from booking_guests; fallback to customer
+            const headGuest = guests.find((g: any) => g.is_head_of_family) || guests[0] || null;
+            const otherGuests = headGuest ? guests.filter((g: any) => g.id !== headGuest.id) : [];
+
+            // For head fields: prefer booking_guest data, fallback to customer table
+            const hg = (field: string) => headGuest?.[field] || customer[field] || null;
+
+            // ─── BOOKING CARD HEADER ─────────────────────────────────
+            const CARD_HEADER_H = 14;
+
+            // Check page space for header + at least 30mm of content
+            if (y + CARD_HEADER_H + 30 > 280) {
                 doc.addPage();
-                startY = 20;
+                drawPageHeader();
+                y = 30;
             }
 
-            // Booking Header
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(0, 0, 0);
-            doc.text(`Piazzola ${pitchLabel} - ${headCustName}`, 14, startY);
-            
-            // Guests count badge
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(100, 100, 100);
-            doc.text(`(${booking.guests_count} ospiti previsti)`, 145, startY);
+            // Card header background
+            doc.setFillColor(241, 245, 249); // slate-100
+            doc.setDrawColor(203, 213, 225); // slate-300
+            doc.rect(MARGIN, y, CONTENT_W, CARD_HEADER_H, 'FD');
 
-            startY += 8;
-            
+            // Pitch badge
+            doc.setFillColor(isCheckedIn ? 22 : 220, isCheckedIn ? 163 : 38, isCheckedIn ? 74 : 38);
+            doc.roundedRect(MARGIN + 2, y + 2, 28, 10, 2, 2, 'F');
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(255, 255, 255);
+            doc.text(`Piaz. ${val(pitch.number)}`, MARGIN + 5, y + 8.5);
+
+            // Guest name
+            const headName = `${hg('first_name') || ''} ${hg('last_name') || ''}`.trim() || 'Cliente Sconosciuto';
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(15, 23, 42); // slate-900
+            doc.text(headName, MARGIN + 34, y + 9);
+
+            // Guest count
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(100, 116, 139);
+            doc.text(`${booking.guests_count} ospiti`, PAGE_W - MARGIN - 2, y + 9, { align: 'right' });
+
+            y += CARD_HEADER_H;
+
+            // ─── MISSING CHECK-IN ────────────────────────────────────
             if (!isCheckedIn) {
-                // RED TEXT FOR MISSING CHECK IN
-                doc.setFontSize(12);
-                doc.setFont('helvetica', 'bold');
-                doc.setTextColor(220, 38, 38); // Red
-                doc.text("DATI MANCANTI - CHECK-IN DA EFFETTUARE", 14, startY);
-                
+                // Red alert box
+                doc.setFillColor(254, 242, 242); // red-50
+                doc.setDrawColor(252, 165, 165); // red-300
+                doc.rect(MARGIN, y, CONTENT_W, 22, 'FD');
+
                 doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(185, 28, 28); // red-700
+                doc.text('⚠  CHECK-IN NON EFFETTUATO — DATI DA COMPILARE', MARGIN + 4, y + 8);
+
+                doc.setFontSize(8.5);
                 doc.setFont('helvetica', 'normal');
-                doc.setTextColor(100, 100, 100);
-                doc.text(`Riferimento prenotazione: ${customer.first_name || ''} ${customer.last_name || ''} - Telefono: ${customer.phone || 'N/D'}`, 14, startY + 6);
-                
-                startY += 18;
+                doc.setTextColor(153, 27, 27); // red-800
+                const refLine = `Riferimento: ${val(customer.first_name)} ${val(customer.last_name)}   |   Tel: ${val(customer.phone)}   |   Email: ${val(customer.email)}`;
+                doc.text(refLine, MARGIN + 4, y + 16);
+
+                y += 28;
             } else {
-                // HEAD OF FAMILY DETAILS
-                const headGuest = booking.guests?.find((g: any) => g.is_head_of_family) || booking.guests?.[0] || customer;
-                const otherGuests = booking.guests?.filter((g: any) => g.id !== headGuest?.id) || [];
-                
-                const formatD = (d: string) => d ? format(new Date(d), 'dd/MM/yyyy') : 'N/D';
-                const addressStr = `${customer.address || ''}, ${customer.residence_city || ''} ${customer.residence_province ? '('+customer.residence_province+')' : ''} ${customer.residence_country || ''}`.trim();
-                const docStr = `${(customer.document_type || 'N/D').toUpperCase()} n. ${customer.document_number || 'N/D'} ril. ${formatD(customer.document_issue_date)} da ${customer.document_issuer || 'N/D'} (${customer.document_issue_city || 'N/D'})`;
-                
-                const headData = [
-                    ['Capofamiglia', `${headGuest.first_name || customer.first_name} ${headGuest.last_name || customer.last_name}`],
-                    ['Nato a', `${headGuest.birth_city || 'N/D'} il ${formatD(headGuest.birth_date)}`],
-                    ['Cittadinanza', `${headGuest.citizenship || 'N/D'}`],
-                    ['Residenza', addressStr || 'N/D'],
-                    ['Documento', docStr]
+                // ─── SEZIONE 1 — CAPOFAMIGLIA ANAGRAFICA ─────────────
+                y += 2;
+                sectionTitle(doc, 'CAPOFAMIGLIA — ANAGRAFICA', MARGIN, y, CONTENT_W, [37, 99, 235]); // blue-600
+                y += 7;
+
+                const anaData: [string, string][] = [
+                    ['Nome e Cognome', `${val(hg('first_name'))} ${val(hg('last_name'))}`],
+                    ['Data di Nascita', fmtDate(hg('birth_date'))],
+                    ['Sesso', genderLabel(hg('gender'))],
+                    ['Luogo di Nascita', `${val(hg('birth_city'))} (${val(hg('birth_province'))}) — ${val(hg('birth_country'))}`],
+                    ['Cittadinanza', val(hg('citizenship'))],
                 ];
 
-                autoTable(doc, {
-                    startY,
-                    body: headData,
-                    theme: 'plain',
-                    styles: { cellPadding: 1, fontSize: 9, minCellHeight: 6 },
-                    columnStyles: {
-                        0: { fontStyle: 'bold', cellWidth: 35, textColor: [100, 100, 100] },
-                        1: { textColor: [0, 0, 0] }
-                    },
-                    margin: { left: 14 }
-                });
+                y = renderKeyValueTable(doc, anaData, MARGIN, y, CONTENT_W);
 
-                startY = (doc as any).lastAutoTable.finalY + 6;
+                // ─── SEZIONE 2 — RESIDENZA ───────────────────────────
+                if (y + 40 > 280) { doc.addPage(); drawPageHeader(); y = 30; }
 
-                // OTHER GUESTS
+                sectionTitle(doc, 'RESIDENZA', MARGIN, y, CONTENT_W, [180, 130, 10]); // amber
+                y += 7;
+
+                const resData: [string, string][] = [
+                    ['Indirizzo', val(hg('address'))],
+                    ['Comune', val(hg('residence_city'))],
+                    ['Provincia', val(hg('residence_province'))],
+                    ['CAP', val(hg('residence_zip'))],
+                    ['Stato', val(hg('residence_country'))],
+                ];
+
+                y = renderKeyValueTable(doc, resData, MARGIN, y, CONTENT_W);
+
+                // ─── SEZIONE 3 — DOCUMENTO ──────────────────────────
+                if (y + 40 > 280) { doc.addPage(); drawPageHeader(); y = 30; }
+
+                sectionTitle(doc, 'DOCUMENTO DI IDENTITÀ', MARGIN, y, CONTENT_W, [5, 150, 105]); // emerald
+                y += 7;
+
+                const docData: [string, string][] = [
+                    ['Tipo Documento', docTypeLabel(hg('document_type'))],
+                    ['Numero', val(hg('document_number'))],
+                    ['Rilasciato da', val(hg('document_issuer'))],
+                    ['Data di Rilascio', fmtDate(hg('document_issue_date'))],
+                    ['Comune di Rilascio', val(hg('document_issue_city'))],
+                    ['Stato di Rilascio', val(hg('document_issue_country'))],
+                ];
+
+                y = renderKeyValueTable(doc, docData, MARGIN, y, CONTENT_W);
+
+                // ─── SEZIONE 4 — VEICOLO ────────────────────────────
+                if (y + 20 > 280) { doc.addPage(); drawPageHeader(); y = 30; }
+
+                sectionTitle(doc, 'VEICOLO', MARGIN, y, CONTENT_W, [79, 70, 229]); // indigo
+                y += 7;
+
+                const vehData: [string, string][] = [
+                    ['Targa', val(hg('license_plate'))],
+                ];
+
+                y = renderKeyValueTable(doc, vehData, MARGIN, y, CONTENT_W);
+
+                // ─── SEZIONE 5 — ALTRI OSPITI ───────────────────────
                 if (otherGuests.length > 0) {
-                    const guestsHead = [['Nome', 'Cognome', 'Data di Nascita', 'Luogo di Nascita', 'Cittadinanza']];
-                    const guestsBody = otherGuests.map((g: any) => [
-                        g.first_name || '',
-                        g.last_name || '',
-                        formatD(g.birth_date),
-                        g.birth_city || '',
-                        g.citizenship || ''
-                    ]);
-                    
-                    autoTable(doc, {
-                        startY,
-                        head: guestsHead,
-                        body: guestsBody,
-                        theme: 'grid',
-                        styles: { fontSize: 8 },
-                        headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
-                        margin: { left: 14 }
+                    if (y + 30 > 280) { doc.addPage(); drawPageHeader(); y = 30; }
+
+                    sectionTitle(doc, `ALTRI OSPITI (${otherGuests.length})`, MARGIN, y, CONTENT_W, [100, 116, 139]); // slate
+                    y += 7;
+
+                    otherGuests.forEach((g: any, gIdx: number) => {
+                        if (y + 30 > 280) { doc.addPage(); drawPageHeader(); y = 30; }
+
+                        // Guest sub-header
+                        doc.setFillColor(248, 250, 252); // slate-50
+                        doc.setDrawColor(226, 232, 240);
+                        doc.rect(MARGIN, y, CONTENT_W, 8, 'FD');
+                        doc.setFontSize(8);
+                        doc.setFont('helvetica', 'bold');
+                        doc.setTextColor(71, 85, 105);
+                        const guestLabel = `${gIdx + 2}. ${val(g.first_name)} ${val(g.last_name)}`;
+                        doc.text(guestLabel, MARGIN + 3, y + 5.5);
+                        y += 10;
+
+                        const guestData: [string, string][] = [
+                            ['Nome e Cognome', `${val(g.first_name)} ${val(g.last_name)}`],
+                            ['Data di Nascita', fmtDate(g.birth_date)],
+                            ['Sesso', genderLabel(g.gender)],
+                            ['Luogo di Nascita', `${val(g.birth_city)} (${val(g.birth_province)}) — ${val(g.birth_country)}`],
+                            ['Cittadinanza', val(g.citizenship)],
+                        ];
+
+                        y = renderKeyValueTable(doc, guestData, MARGIN, y, CONTENT_W);
                     });
-                    
-                    startY = (doc as any).lastAutoTable.finalY + 12;
-                } else {
-                    startY += 6;
                 }
             }
-            
-            // Add a separator line if not the last item
+
+            // ─── SEPARATOR ──────────────────────────────────────────
             if (idx < arrivals.length - 1) {
-                doc.setDrawColor(230, 230, 230);
-                doc.line(14, startY - 4, 196, startY - 4);
-                startY += 4;
+                if (y + 14 > 280) {
+                    doc.addPage();
+                    drawPageHeader();
+                    y = 30;
+                } else {
+                    doc.setDrawColor(148, 163, 184);
+                    doc.setLineWidth(0.4);
+                    doc.line(MARGIN, y + 4, PAGE_W - MARGIN, y + 4);
+                    y += 14;
+                }
             }
         });
-        
-        // Save using requested filename format
-        const fnameObj = format(parsedDate, 'dd_MMMM_yyyy', { locale: it }).replace(/\s+/g, '_').toLowerCase();
+
+        // ─── FOOTER ─────────────────────────────────────────────────
+        const totalPages = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            doc.setFontSize(7.5);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(148, 163, 184);
+            doc.text(`Pagina ${i} di ${totalPages}  —  Documento generato da CampFlow  —  ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, PAGE_W / 2, 292, { align: 'center' });
+        }
+
+        const fnameObj = format(parsedDate, 'dd_MMMM_yyyy', { locale: it }).toLowerCase();
         doc.save(`arrivi_${fnameObj}.pdf`);
     };
 
@@ -182,16 +305,16 @@ export function ArrivalsReportButton() {
                 <DialogHeader>
                     <DialogTitle>Genera Riepilogo Arrivi</DialogTitle>
                     <DialogDescription>
-                        Seleziona la data per la quale vuoi generare il foglio di riepilogo in formato PDF.
-                        Verranno inclusi tutti i dettagli inseriti al check-in.
+                        Seleziona la data per cui vuoi generare il foglio di riepilogo PDF con
+                        tutti i dati inseriti durante il check-in.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Data degli arrivi</label>
                         <div className="relative">
-                            <Input 
-                                type="date" 
+                            <Input
+                                type="date"
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
                                 className="pl-10"
@@ -203,11 +326,75 @@ export function ArrivalsReportButton() {
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setOpen(false)}>Annulla</Button>
                     <Button onClick={handleGenerate} disabled={loading}>
-                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+                        {loading
+                            ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            : <FileText className="mr-2 h-4 w-4" />}
                         Genera PDF
                     </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+
+function sectionTitle(
+    doc: jsPDF,
+    title: string,
+    x: number,
+    y: number,
+    w: number,
+    color: [number, number, number]
+) {
+    doc.setFillColor(...color);
+    doc.rect(x, y, 3, 5, 'F');
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...color);
+    doc.text(title, x + 5, y + 4);
+}
+
+/**
+ * Renders a two-column key/value table and returns the new Y position.
+ */
+function renderKeyValueTable(
+    doc: jsPDF,
+    rows: [string, string][],
+    x: number,
+    y: number,
+    w: number
+): number {
+    const COL1 = 42;
+    const ROW_H = 5.5;
+    const PAD_X = 2;
+    const PAD_Y = 4;
+
+    rows.forEach(([label, value], i) => {
+        const bg = i % 2 === 0 ? [252, 252, 253] : [255, 255, 255];
+        doc.setFillColor(bg[0], bg[1], bg[2]);
+        doc.rect(x, y, w, ROW_H, 'F');
+
+        // Label
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(100, 116, 139); // slate-500
+        doc.text(label, x + PAD_X, y + PAD_Y);
+
+        // Value — wrapping for long strings
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(15, 23, 42); // slate-900
+        const maxW = w - COL1 - PAD_X;
+        const lines = doc.splitTextToSize(value, maxW);
+        doc.text(lines[0], x + COL1, y + PAD_Y); // Always show at least first line
+
+        y += ROW_H;
+    });
+
+    // Bottom border
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.2);
+    doc.line(x, y, x + w, y);
+
+    return y + 4;
 }
