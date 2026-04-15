@@ -98,13 +98,13 @@ export default function CustomersPage() {
         <div className="h-[calc(100vh-4rem)] flex flex-col bg-muted/5 p-0 overflow-hidden">
 
             {/* Header: Centered & Professional */}
-            <div className="flex flex-col items-center justify-center text-center gap-4 shrink-0 py-6 px-4">
+            <div className="flex flex-col items-center justify-center text-center gap-3 shrink-0 pt-4 pb-3 px-4 md:pt-6 md:pb-4">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-bold tracking-tight flex items-center justify-center gap-2">
-                        <Users className="h-8 w-8 text-primary" />
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center justify-center gap-2">
+                        <Users className="h-6 w-6 md:h-8 md:w-8 text-primary" />
                         Clienti
                     </h1>
-                    <p className="text-muted-foreground text-sm max-w-[500px]">
+                    <p className="text-muted-foreground text-xs md:text-sm max-w-[500px] hidden sm:block">
                         Gestisci l'anagrafica completa degli ospiti, visualizza lo storico delle prenotazioni e accedi rapidamente ai dettagli.
                     </p>
                 </div>
@@ -160,11 +160,11 @@ export default function CustomersPage() {
                 <div className="h-full flex flex-col pt-0">
                     <div className="flex-1 flex flex-col overflow-hidden">
 
-                        {/* Table Header Row (Sticky) */}
-                        <div className="border-b bg-muted/30 px-6 py-3 grid grid-cols-12 gap-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            <div className="col-span-4">Cliente</div>
+                        {/* Table Header Row - desktop only */}
+                        <div className="hidden md:grid border-b bg-muted/30 px-4 lg:px-6 py-3 grid-cols-12 gap-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            <div className="col-span-5">Cliente</div>
                             <div className="col-span-4">Contatti</div>
-                            <div className="col-span-2">Registrato</div>
+                            <div className="col-span-1">Registrato</div>
                             <div className="col-span-2 text-right">Azioni</div>
                         </div>
 
@@ -189,51 +189,75 @@ export default function CustomersPage() {
                                     {data?.customers?.map((customer: Customer) => (
                                         <div
                                             key={customer.id}
-                                            className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-muted/30 transition-colors group cursor-pointer"
+                                            className="group hover:bg-muted/30 transition-colors cursor-pointer"
                                             onClick={() => router.push(`/customers/${customer.id}`)}
                                         >
-                                            {/* Name & Avatar */}
-                                            <div className="col-span-4 flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                                            {/* Desktop Row */}
+                                            <div className="hidden md:grid grid-cols-12 gap-4 px-4 lg:px-6 py-4 items-center">
+                                                {/* Name & Avatar */}
+                                                <div className="col-span-5 flex items-center gap-3">
+                                                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                                                        {customer.first_name[0]}{customer.last_name[0]}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                                                            {customer.first_name} {customer.last_name}
+                                                        </div>
+                                                        <div className="text-xs text-muted-foreground hidden lg:block">ID: {customer.id.slice(0, 8)}...</div>
+                                                        {customer.customer_groups && (
+                                                            <Badge variant="outline" className="mt-1 text-[10px] px-1 py-0" style={{ borderColor: customer.customer_groups.color, color: customer.customer_groups.color }}>
+                                                                {customer.customer_groups.name}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Contacts */}
+                                                <div className="col-span-4 space-y-1">
+                                                    <div className="flex items-center gap-2 text-sm text-foreground/80">
+                                                        <Mail className="h-3 w-3 text-muted-foreground" />
+                                                        <span className="truncate">{customer.email || <span className="text-muted-foreground italic">Nessuna email</span>}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-sm text-foreground/80">
+                                                        <Phone className="h-3 w-3 text-muted-foreground" />
+                                                        {customer.phone || <span className="text-muted-foreground italic">Nessun telefono</span>}
+                                                    </div>
+                                                </div>
+
+                                                {/* Registered */}
+                                                <div className="col-span-1">
+                                                    <Badge variant="secondary" className="font-normal text-xs text-muted-foreground bg-muted/50">
+                                                        {customer.created_at ? format(new Date(customer.created_at), 'd MMM yy', { locale: it }) : '-'}
+                                                    </Badge>
+                                                </div>
+
+                                                {/* Actions */}
+                                                <div className="col-span-2 flex justify-end">
+                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteClick(customer); }}>
+                                                        <Trash2 className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            {/* Mobile Card */}
+                                            <div className="md:hidden px-4 py-3 flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
                                                     {customer.first_name[0]}{customer.last_name[0]}
                                                 </div>
-                                                <div>
-                                                    <div className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                                                        {customer.first_name} {customer.last_name}
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground hidden lg:block">ID: {customer.id.slice(0, 8)}...</div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-semibold text-sm truncate">{customer.first_name} {customer.last_name}</div>
+                                                    <div className="text-xs text-muted-foreground truncate">{customer.email || 'Nessuna email'}</div>
                                                     {customer.customer_groups && (
                                                         <Badge variant="outline" className="mt-1 text-[10px] px-1 py-0" style={{ borderColor: customer.customer_groups.color, color: customer.customer_groups.color }}>
                                                             {customer.customer_groups.name}
                                                         </Badge>
                                                     )}
                                                 </div>
-                                            </div>
-
-                                            {/* Contacts */}
-                                            <div className="col-span-4 space-y-1">
-                                                <div className="flex items-center gap-2 text-sm text-foreground/80">
-                                                    <Mail className="h-3 w-3 text-muted-foreground" />
-                                                    {customer.email || <span className="text-muted-foreground italic">Nessuna email</span>}
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteClick(customer); }}>
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </Button>
                                                 </div>
-                                                <div className="flex items-center gap-2 text-sm text-foreground/80">
-                                                    <Phone className="h-3 w-3 text-muted-foreground" />
-                                                    {customer.phone || <span className="text-muted-foreground italic">Nessun telefono</span>}
-                                                </div>
-                                            </div>
-
-                                            {/* Registered */}
-                                            <div className="col-span-2">
-                                                <Badge variant="secondary" className="font-normal text-xs text-muted-foreground bg-muted/50">
-                                                    {customer.created_at ? format(new Date(customer.created_at), 'd MMM yyy', { locale: it }) : '-'}
-                                                </Badge>
-                                            </div>
-
-                                            {/* Actions */}
-                                            <div className="col-span-2 flex justify-end">
-                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteClick(customer); }}>
-                                                    <Trash2 className="h-3 w-3" />
-                                                </Button>
                                             </div>
                                         </div>
                                     ))}

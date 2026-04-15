@@ -112,13 +112,13 @@ export default function CheckInPage() {
         <div className="h-[calc(100vh-4rem)] flex flex-col bg-muted/5 p-0 overflow-hidden">
 
             {/* Header: Centered & Professional */}
-            <div className="flex flex-col items-center justify-center text-center gap-4 shrink-0 py-6 px-4">
+            <div className="flex flex-col items-center justify-center text-center gap-3 shrink-0 pt-4 pb-3 px-4 md:pt-6 md:pb-4">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-bold tracking-tight flex items-center justify-center gap-2">
-                        <UserCheck className="h-8 w-8 text-primary" />
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center justify-center gap-2">
+                        <UserCheck className="h-6 w-6 md:h-8 md:w-8 text-primary" />
                         Check-in Ospiti
                     </h1>
-                    <p className="text-muted-foreground text-sm max-w-[500px]">
+                    <p className="text-muted-foreground text-xs md:text-sm max-w-[500px] hidden sm:block">
                         Ricerca prenotazioni, inserisci i documenti d'identità e gestisci gli invii al portale Alloggiati Web.
                     </p>
                 </div>
@@ -173,12 +173,11 @@ export default function CheckInPage() {
             <div className="flex-1 w-full overflow-hidden">
                 <div className="h-full flex flex-col pt-0">
                     <div className="flex-1 flex flex-col overflow-hidden">
-
-                        {/* Table Header Row (Sticky) */}
-                        <div className="border-b bg-muted/30 px-6 py-3 grid grid-cols-12 gap-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            <div className="col-span-4">Ospite</div>
+                        {/* Table Header Row - desktop only */}
+                        <div className="hidden md:grid border-b bg-muted/30 px-4 lg:px-6 py-3 grid-cols-12 gap-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            <div className="col-span-5">Ospite</div>
                             <div className="col-span-4">Soggiorno & Piazzola</div>
-                            <div className="col-span-2">Stato</div>
+                            <div className="col-span-1">Stato</div>
                             <div className="col-span-2 text-right">Azioni</div>
                         </div>
 
@@ -202,68 +201,105 @@ export default function CheckInPage() {
                                         const isCheckedIn = booking.status === 'checked_in';
 
                                         return (
-                                            <div key={booking.id} className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-muted/30 transition-colors group">
-                                                {/* Ospite */}
-                                                <div className="col-span-4 flex items-center gap-3">
-                                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                                            // Desktop: grid layout / Mobile: flex card layout
+                                            <div key={booking.id} className="group hover:bg-muted/30 transition-colors">
+
+                                                {/* Desktop Row */}
+                                                <div className="hidden md:grid grid-cols-12 gap-4 px-4 lg:px-6 py-4 items-center">
+                                                    {/* Ospite */}
+                                                    <div className="col-span-5 flex items-center gap-3">
+                                                        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                                                            {booking.customer?.first_name?.[0]}{booking.customer?.last_name?.[0]}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <div className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                                                                {customerName || 'Cliente Sconosciuto'}
+                                                            </div>
+                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                                                                <Users className="h-3 w-3" />
+                                                                {booking.guests_count} Ospiti
+                                                                {booking.notes && (
+                                                                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-500 ml-2">
+                                                                        <FileText className="h-3 w-3" /> Note
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Soggiorno */}
+                                                    <div className="col-span-4 space-y-1">
+                                                        <div className="flex items-center gap-2 text-sm text-foreground/80">
+                                                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                                                            {format(start, 'd MMM', { locale: it })} - {format(end, 'd MMM yyyy', { locale: it })}
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge variant="outline" className="text-xs font-normal">
+                                                                Piazzola {booking.pitch?.number || '?'}
+                                                            </Badge>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Stato */}
+                                                    <div className="col-span-1">
+                                                        <Badge variant={isCheckedIn ? "secondary" : "outline"} className={`font-medium text-xs ${isCheckedIn ? 'bg-green-100 text-green-700 hover:bg-green-100 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' : ''}`}>
+                                                            {isCheckedIn ? '✓' : 'Da fare'}
+                                                        </Badge>
+                                                        {isCheckedIn && booking.questura_sent && (
+                                                            <div className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                                                                <Check className="h-3 w-3 text-green-600" /> Alloggiati
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Azioni */}
+                                                    <div className="col-span-2 flex justify-end">
+                                                        <Button
+                                                            variant={isCheckedIn ? "secondary" : "default"}
+                                                            size="sm"
+                                                            className={`gap-1 shadow-sm transition-all ${!isCheckedIn ? 'hover:bg-primary/90' : 'hover:bg-muted/80'}`}
+                                                            onClick={() => handleOpenCheckIn(booking)}
+                                                        >
+                                                            {isCheckedIn ? (
+                                                                <>Dettagli <ChevronRight className="h-3 w-3" /></>
+                                                            ) : (
+                                                                <>Check-in <ChevronRight className="h-3 w-3" /></>
+                                                            )}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Mobile Card */}
+                                                <div className="md:hidden px-4 py-3 flex items-center gap-3">
+                                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
                                                         {booking.customer?.first_name?.[0]}{booking.customer?.last_name?.[0]}
                                                     </div>
-                                                    <div>
-                                                        <div className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                                                            {customerName || 'Cliente Sconosciuto'}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="font-semibold text-sm truncate">{customerName || 'Cliente Sconosciuto'}</div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {format(start, 'd MMM', { locale: it })} → {format(end, 'd MMM', { locale: it })} · Piazzola {booking.pitch?.number || '?'}
                                                         </div>
-                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                                                            <Users className="h-3 w-3" />
-                                                            {booking.guests_count} Ospiti
-                                                            {booking.notes && (
-                                                                <span className="flex items-center gap-1 text-amber-600 dark:text-amber-500 ml-2">
-                                                                    <FileText className="h-3 w-3" /> Note
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <Badge variant={isCheckedIn ? "secondary" : "outline"} className={`text-[10px] font-medium ${isCheckedIn ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400' : ''}`}>
+                                                                {isCheckedIn ? 'Checked-in' : 'Da fare'}
+                                                            </Badge>
+                                                            {isCheckedIn && booking.questura_sent && (
+                                                                <span className="text-[10px] text-green-600 flex items-center gap-0.5">
+                                                                    <Check className="h-3 w-3" /> Alloggiati
                                                                 </span>
                                                             )}
                                                         </div>
                                                     </div>
-                                                </div>
-
-                                                {/* Soggiorno */}
-                                                <div className="col-span-4 space-y-1">
-                                                    <div className="flex items-center gap-2 text-sm text-foreground/80">
-                                                        <Calendar className="h-3 w-3 text-muted-foreground" />
-                                                        {format(start, 'd MMM', { locale: it })} - {format(end, 'd MMM yyyy', { locale: it })}
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge variant="outline" className="text-xs font-normal">
-                                                            Piazzola {booking.pitch?.number || '?'}
-                                                        </Badge>
-                                                    </div>
-                                                </div>
-
-                                                {/* Stato */}
-                                                <div className="col-span-2">
-                                                    <Badge variant={isCheckedIn ? "secondary" : "outline"} className={`font-medium text-xs ${isCheckedIn ? 'bg-green-100 text-green-700 hover:bg-green-100 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' : ''}`}>
-                                                        {isCheckedIn ? 'Checked-in' : 'Confermato'}
-                                                    </Badge>
-                                                    {isCheckedIn && booking.questura_sent && (
-                                                        <div className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
-                                                            <Check className="h-3 w-3 text-green-600" /> Alloggiati Web
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Azioni */}
-                                                <div className="col-span-2 flex justify-end">
                                                     <Button
                                                         variant={isCheckedIn ? "secondary" : "default"}
                                                         size="sm"
-                                                        className={`gap-1 shadow-sm transition-all ${!isCheckedIn ? 'hover:bg-primary/90' : 'hover:bg-muted/80'}`}
+                                                        className="shrink-0 h-8 text-xs"
                                                         onClick={() => handleOpenCheckIn(booking)}
                                                     >
-                                                        {isCheckedIn ? (
-                                                            <>Dettagli <ChevronRight className="h-3 w-3" /></>
-                                                        ) : (
-                                                            <>Check-in <ChevronRight className="h-3 w-3" /></>
-                                                        )}
+                                                        {isCheckedIn ? 'Dettagli' : 'Check-in'}
                                                     </Button>
                                                 </div>
+
                                             </div>
                                         );
                                     })}

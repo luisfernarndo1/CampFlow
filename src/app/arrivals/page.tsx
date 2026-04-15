@@ -99,36 +99,40 @@ export default function ArrivalsPage() {
         <div className="flex flex-col h-screen bg-background">
             {/* Header Sticky */}
             <header className="sticky top-0 z-20 border-b bg-card/80 backdrop-blur-md shadow-sm">
-                <div className="container mx-auto px-4 py-4 max-w-5xl">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <Link href="/">
-                                <Button variant="ghost" size="icon" className="h-10 w-10">
-                                    <ArrowLeft className="h-6 w-6" />
-                                </Button>
-                            </Link>
-                            <div>
-                                <h1 className="text-2xl font-bold flex items-center gap-2 text-foreground">
-                                    <ArrowDownCircle className="h-6 w-6 text-green-600" />
-                                    Arrivi
-                                    {!loading && data && (
-                                        <span className="text-lg font-medium text-muted-foreground ml-2">
-                                            ({completedCount}/{data.total_arrivals} completati)
-                                        </span>
-                                    )}
-                                </h1>
-                                <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                                    <CalendarIcon className="h-3.5 w-3.5" />
-                                    {view === 'week'
-                                        ? "Prossimi 7 giorni"
-                                        : format(view === 'tomorrow' ? addDays(new Date(), 1) : new Date(), 'EEEE d MMMM yyyy', { locale: it })
-                                    }
-                                </p>
+                <div className="container mx-auto px-3 sm:px-4 py-3 max-w-5xl">
+                    <div className="flex flex-col gap-3">
+                        {/* Top row: back + title */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 sm:gap-4">
+                                <Link href="/">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10">
+                                        <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+                                    </Button>
+                                </Link>
+                                <div>
+                                    <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 text-foreground">
+                                        <ArrowDownCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                                        Arrivi
+                                        {!loading && data && (
+                                            <span className="text-sm sm:text-lg font-medium text-muted-foreground ml-1">
+                                                ({completedCount}/{data.total_arrivals})
+                                            </span>
+                                        )}
+                                    </h1>
+                                    <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
+                                        <CalendarIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                        {view === 'week'
+                                            ? "Prossimi 7 giorni"
+                                            : format(view === 'tomorrow' ? addDays(new Date(), 1) : new Date(), 'EEEE d MMMM yyyy', { locale: it })
+                                        }
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap md:flex-nowrap">
-                            <div className="relative flex-1 md:w-64 min-w-[200px]">
+                        {/* Bottom row: search + controls */}
+                        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                            <div className="relative flex-1 min-w-[140px]">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Cerca ospite o piazzola..."
@@ -137,7 +141,7 @@ export default function ArrivalsPage() {
                                     onChange={(e) => setFilter(e.target.value)}
                                 />
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 shrink-0">
                                 <DateToggle currentView={view} onToggle={handleViewToggle} />
                                 <ArrivalsReportButton 
                                     view={view}

@@ -112,10 +112,10 @@ export default function StatsPage() {
     });
 
     return (
-        <div className="relative flex-1 p-8 pt-6 min-h-[calc(100vh-4rem)]">
+        <div className="relative flex-1 p-4 md:p-8 pt-4 md:pt-6 min-h-[calc(100vh-4rem)]">
             {!isUnlocked && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm transition-all duration-300">
-                    <div className="bg-card p-8 rounded-xl shadow-lg border w-full max-w-[400px] flex flex-col items-center">
+                    <div className="bg-card p-6 md:p-8 rounded-xl shadow-lg border w-full max-w-[400px] mx-4 flex flex-col items-center">
                         <div className="bg-primary/10 p-4 rounded-full mb-4">
                             <Lock className="w-8 h-8 text-primary" />
                         </div>
@@ -146,15 +146,15 @@ export default function StatsPage() {
             )}
 
             <div className={`space-y-4 transition-all duration-500 ${!isUnlocked ? "opacity-40 pointer-events-none select-none blur-[8px] max-h-[80vh] overflow-hidden" : ""}`}>
-                <div className="flex items-center justify-between space-y-2">
-                    <h2 className="text-3xl font-bold tracking-tight">Dashboard Statistiche</h2>
-                <div className="flex items-center space-x-2">
-                    <Tabs value={range} onValueChange={(v) => setRange(v as TimeRange)} className="mr-2">
-                        <TabsList>
-                            <TabsTrigger value="7d">7 Giorni</TabsTrigger>
-                            <TabsTrigger value="30d">30 Giorni</TabsTrigger>
-                            <TabsTrigger value="90d">3 Mesi</TabsTrigger>
-                            <TabsTrigger value="year">Quest'anno</TabsTrigger>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard Statistiche</h2>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Tabs value={range} onValueChange={(v) => setRange(v as TimeRange)} className="">
+                        <TabsList className="h-9">
+                            <TabsTrigger value="7d" className="text-xs px-2 sm:px-3">7 Giorni</TabsTrigger>
+                            <TabsTrigger value="30d" className="text-xs px-2 sm:px-3">30 Giorni</TabsTrigger>
+                            <TabsTrigger value="90d" className="text-xs px-2 sm:px-3">3 Mesi</TabsTrigger>
+                            <TabsTrigger value="year" className="text-xs px-2 sm:px-3">Quest'anno</TabsTrigger>
                         </TabsList>
                     </Tabs>
                     <Button 
@@ -183,7 +183,7 @@ export default function StatsPage() {
                     </div>
                 ) : stats ? (
                     <div className={`space-y-4 transition-opacity duration-300 ${isFetching ? 'opacity-50' : 'opacity-100'}`}>
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
                             <KPICard
                                 title="Ricavi Totali"
                                 value={formatCurrency(stats.kpi.revenue)}

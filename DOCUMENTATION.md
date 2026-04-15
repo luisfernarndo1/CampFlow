@@ -1283,3 +1283,7 @@ Created a reusable `CheckInDialog` component that:
 - [2026-04-15 13:42]: Uniformità e Dettaglio Completo Report
   - *Details*: Unificata la logica di generazione per report giornalieri e settimanali. Entrambi ora contengono TUTTI i dettagli captati (Anagrafica completa, Residenza, Documenti, Veicolo e dettagli di ogni singolo ospite).
 
+
+- [2026-04-15 15:45]: Responsive Design Audit
+  - *Details*: Fully refactored and optimized layouts for Arrival, Departures, Check-in, Customers, Stats, Settings, and Header components to achieve full responsiveness across mobile, tablet, and desktop viewports.
+  - *Tech Notes*: Adapted grid table layouts to mobile card lists in Check-in and Customers. Introduced a responsive Header with a hamburger menu for mobile devices. Updated Settings to use modern mobile select/tablet tabs layout. Optimized KPI grids in the Stats component.
