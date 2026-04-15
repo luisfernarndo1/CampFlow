@@ -122,169 +122,11 @@ export function ArrivalsReportButton({ defaultDate, view }: ArrivalsReportButton
 
         // ─── PER OGNI PRENOTAZIONE ────────────────────────────────────
         arrivals.forEach((booking, idx) => {
-            const isCheckedIn = booking.status === 'checked_in';
-            const customer = booking.customer || {};
-            const pitch = booking.pitch || {};
-            const guests: any[] = booking.guests || [];
-
-            // Find head of family from booking_guests; fallback to customer
-            const headGuest = guests.find((g: any) => g.is_head_of_family) || guests[0] || null;
-            const otherGuests = headGuest ? guests.filter((g: any) => g.id !== headGuest.id) : [];
-
-            // For head fields: prefer booking_guest data, fallback to customer table
-            const hg = (field: string) => headGuest?.[field] || customer[field] || null;
-
-            // ─── BOOKING CARD HEADER ─────────────────────────────────
-            const CARD_HEADER_H = 14;
-
-            // Check page space for header + at least 30mm of content
-            if (y + CARD_HEADER_H + 30 > 280) {
+            y = renderBookingCard(doc, booking, y, MARGIN, CONTENT_W, PAGE_W, () => {
                 doc.addPage();
                 drawPageHeader();
-                y = 30;
-            }
-
-            // Card header background
-            doc.setFillColor(241, 245, 249); // slate-100
-            doc.setDrawColor(203, 213, 225); // slate-300
-            doc.rect(MARGIN, y, CONTENT_W, CARD_HEADER_H, 'FD');
-
-            // Pitch badge
-            doc.setFillColor(isCheckedIn ? 22 : 220, isCheckedIn ? 163 : 38, isCheckedIn ? 74 : 38);
-            doc.roundedRect(MARGIN + 2, y + 2, 28, 10, 2, 2, 'F');
-            doc.setFontSize(8);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(255, 255, 255);
-            doc.text(`Piaz. ${val(pitch.number)}`, MARGIN + 5, y + 8.5);
-
-            // Guest name
-            const headName = `${hg('first_name') || ''} ${hg('last_name') || ''}`.trim() || 'Cliente Sconosciuto';
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(15, 23, 42); // slate-900
-            doc.text(headName, MARGIN + 34, y + 9);
-
-            // Guest count
-            doc.setFontSize(8);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(100, 116, 139);
-            doc.text(`${booking.guests_count} ospiti`, PAGE_W - MARGIN - 2, y + 9, { align: 'right' });
-
-            y += CARD_HEADER_H;
-
-            // ─── MISSING CHECK-IN ────────────────────────────────────
-            if (!isCheckedIn) {
-                // Red alert box
-                doc.setFillColor(254, 242, 242); // red-50
-                doc.setDrawColor(252, 165, 165); // red-300
-                doc.rect(MARGIN, y, CONTENT_W, 22, 'FD');
-
-                doc.setFontSize(10);
-                doc.setFont('helvetica', 'bold');
-                doc.setTextColor(185, 28, 28); // red-700
-                doc.text('⚠  CHECK-IN NON EFFETTUATO — DATI DA COMPILARE', MARGIN + 4, y + 8);
-
-                doc.setFontSize(8.5);
-                doc.setFont('helvetica', 'normal');
-                doc.setTextColor(153, 27, 27); // red-800
-                const refLine = `Riferimento: ${val(customer.first_name)} ${val(customer.last_name)}   |   Tel: ${val(customer.phone)}   |   Email: ${val(customer.email)}`;
-                doc.text(refLine, MARGIN + 4, y + 16);
-
-                y += 28;
-            } else {
-                // ─── SEZIONE 1 — CAPOFAMIGLIA ANAGRAFICA ─────────────
-                y += 2;
-                sectionTitle(doc, 'CAPOFAMIGLIA — ANAGRAFICA', MARGIN, y, CONTENT_W, [37, 99, 235]); // blue-600
-                y += 7;
-
-                const anaData: [string, string][] = [
-                    ['Nome e Cognome', `${val(hg('first_name'))} ${val(hg('last_name'))}`],
-                    ['Data di Nascita', fmtDate(hg('birth_date'))],
-                    ['Sesso', genderLabel(hg('gender'))],
-                    ['Luogo di Nascita', `${val(hg('birth_city'))} (${val(hg('birth_province'))}) — ${val(hg('birth_country'))}`],
-                    ['Cittadinanza', val(hg('citizenship'))],
-                ];
-
-                y = renderKeyValueTable(doc, anaData, MARGIN, y, CONTENT_W);
-
-                // ─── SEZIONE 2 — RESIDENZA ───────────────────────────
-                if (y + 40 > 280) { doc.addPage(); drawPageHeader(); y = 30; }
-
-                sectionTitle(doc, 'RESIDENZA', MARGIN, y, CONTENT_W, [180, 130, 10]); // amber
-                y += 7;
-
-                const resData: [string, string][] = [
-                    ['Indirizzo', val(hg('address'))],
-                    ['Comune', val(hg('residence_city'))],
-                    ['Provincia', val(hg('residence_province'))],
-                    ['CAP', val(hg('residence_zip'))],
-                    ['Stato', val(hg('residence_country'))],
-                ];
-
-                y = renderKeyValueTable(doc, resData, MARGIN, y, CONTENT_W);
-
-                // ─── SEZIONE 3 — DOCUMENTO ──────────────────────────
-                if (y + 40 > 280) { doc.addPage(); drawPageHeader(); y = 30; }
-
-                sectionTitle(doc, 'DOCUMENTO DI IDENTITÀ', MARGIN, y, CONTENT_W, [5, 150, 105]); // emerald
-                y += 7;
-
-                const docData: [string, string][] = [
-                    ['Tipo Documento', docTypeLabel(hg('document_type'))],
-                    ['Numero', val(hg('document_number'))],
-                    ['Rilasciato da', val(hg('document_issuer'))],
-                    ['Data di Rilascio', fmtDate(hg('document_issue_date'))],
-                    ['Comune di Rilascio', val(hg('document_issue_city'))],
-                    ['Stato di Rilascio', val(hg('document_issue_country'))],
-                ];
-
-                y = renderKeyValueTable(doc, docData, MARGIN, y, CONTENT_W);
-
-                // ─── SEZIONE 4 — VEICOLO ────────────────────────────
-                if (y + 20 > 280) { doc.addPage(); drawPageHeader(); y = 30; }
-
-                sectionTitle(doc, 'VEICOLO', MARGIN, y, CONTENT_W, [79, 70, 229]); // indigo
-                y += 7;
-
-                const vehData: [string, string][] = [
-                    ['Targa', val(hg('license_plate'))],
-                ];
-
-                y = renderKeyValueTable(doc, vehData, MARGIN, y, CONTENT_W);
-
-                // ─── SEZIONE 5 — ALTRI OSPITI ───────────────────────
-                if (otherGuests.length > 0) {
-                    if (y + 30 > 280) { doc.addPage(); drawPageHeader(); y = 30; }
-
-                    sectionTitle(doc, `ALTRI OSPITI (${otherGuests.length})`, MARGIN, y, CONTENT_W, [100, 116, 139]); // slate
-                    y += 7;
-
-                    otherGuests.forEach((g: any, gIdx: number) => {
-                        if (y + 30 > 280) { doc.addPage(); drawPageHeader(); y = 30; }
-
-                        // Guest sub-header
-                        doc.setFillColor(248, 250, 252); // slate-50
-                        doc.setDrawColor(226, 232, 240);
-                        doc.rect(MARGIN, y, CONTENT_W, 8, 'FD');
-                        doc.setFontSize(8);
-                        doc.setFont('helvetica', 'bold');
-                        doc.setTextColor(71, 85, 105);
-                        const guestLabel = `${gIdx + 2}. ${val(g.first_name)} ${val(g.last_name)}`;
-                        doc.text(guestLabel, MARGIN + 3, y + 5.5);
-                        y += 10;
-
-                        const guestData: [string, string][] = [
-                            ['Nome e Cognome', `${val(g.first_name)} ${val(g.last_name)}`],
-                            ['Data di Nascita', fmtDate(g.birth_date)],
-                            ['Sesso', genderLabel(g.gender)],
-                            ['Luogo di Nascita', `${val(g.birth_city)} (${val(g.birth_province)}) — ${val(g.birth_country)}`],
-                            ['Cittadinanza', val(g.citizenship)],
-                        ];
-
-                        y = renderKeyValueTable(doc, guestData, MARGIN, y, CONTENT_W);
-                    });
-                }
-            }
+                return 30;
+            });
 
             // ─── SEPARATOR ──────────────────────────────────────────
             if (idx < arrivals.length - 1) {
@@ -456,33 +298,82 @@ export function ArrivalsReportButton({ defaultDate, view }: ArrivalsReportButton
             doc.setFontSize(8.5);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(153, 27, 27);
-            const refLine = `Riferimento: ${val(customer.first_name)} ${val(customer.last_name)}   |   Tel: ${val(customer.phone)}`;
+            const refLine = `Riferimento: ${val(customer.first_name)} ${val(customer.last_name)}   |   Tel: ${val(customer.phone)}   |   Email: ${val(customer.email)}`;
             doc.text(refLine, MARGIN + 4, y + 16);
             y += 28;
         } else {
+            // ─── SEZIONE 1 — CAPOFAMIGLIA ANAGRAFICA ─────────────
             y += 2;
-            sectionTitle(doc, 'CAPOFAMIGLIA', MARGIN, y, CONTENT_W, [37, 99, 235]);
+            sectionTitle(doc, 'CAPOFAMIGLIA — ANAGRAFICA', MARGIN, y, CONTENT_W, [37, 99, 235]);
             y += 7;
             const anaData: [string, string][] = [
-                ['Anagrafica', `${val(hg('first_name'))} ${val(hg('last_name'))} (${genderLabel(hg('gender'))}) — NATO A ${val(hg('birth_city'))} IL ${fmtDate(hg('birth_date'))}`],
-                ['Residenza', `${val(hg('address'))}, ${val(hg('residence_city'))} (${val(hg('residence_province'))}) — ${val(hg('residence_country'))}`],
-                ['Documento', `${docTypeLabel(hg('document_type'))} N. ${val(hg('document_number'))} RILASC. DA ${val(hg('document_issuer'))} IL ${fmtDate(hg('document_issue_date'))}`],
-                ['Veicolo', `Targa: ${val(hg('license_plate'))}`],
+                ['Nome e Cognome', `${val(hg('first_name'))} ${val(hg('last_name'))}`],
+                ['Data di Nascita', fmtDate(hg('birth_date'))],
+                ['Sesso', genderLabel(hg('gender'))],
+                ['Luogo di Nascita', `${val(hg('birth_city'))} (${val(hg('birth_province'))}) — ${val(hg('birth_country'))}`],
+                ['Cittadinanza', val(hg('citizenship'))],
             ];
             y = renderKeyValueTable(doc, anaData, MARGIN, y, CONTENT_W);
 
-            if (otherGuests.length > 0) {
-                if (y + 20 > 285) { y = onNewPage(); }
-                sectionTitle(doc, `ALTRI OSPITI (${otherGuests.length})`, MARGIN, y, CONTENT_W, [100, 116, 139]);
-                y += 6;
-                const guestsSummary = otherGuests.map((g, i) => `${i + 2}. ${val(g.first_name)} ${val(g.last_name)} (${genderLabel(g.gender)}) - NATO IL ${fmtDate(g.birth_date)}`).join('\n');
+            // ─── SEZIONE 2 — RESIDENZA ───────────────────────────
+            if (y + 40 > 285) { y = onNewPage(); }
+            sectionTitle(doc, 'RESIDENZA', MARGIN, y, CONTENT_W, [180, 130, 10]);
+            y += 7;
+            const resData: [string, string][] = [
+                ['Indirizzo', val(hg('address'))],
+                ['Comune', val(hg('residence_city'))],
+                ['Provincia', val(hg('residence_province'))],
+                ['CAP', val(hg('residence_zip'))],
+                ['Stato', val(hg('residence_country'))],
+            ];
+            y = renderKeyValueTable(doc, resData, MARGIN, y, CONTENT_W);
 
-                doc.setFontSize(7.5);
-                doc.setFont('helvetica', 'normal');
-                doc.setTextColor(15, 23, 42);
-                const lines = doc.splitTextToSize(guestsSummary, CONTENT_W - 10);
-                doc.text(lines, MARGIN + 5, y + 4);
-                y += (lines.length * 4) + 6;
+            // ─── SEZIONE 3 — DOCUMENTO ──────────────────────────
+            if (y + 45 > 285) { y = onNewPage(); }
+            sectionTitle(doc, 'DOCUMENTO DI IDENTITÀ', MARGIN, y, CONTENT_W, [5, 150, 105]);
+            y += 7;
+            const docData: [string, string][] = [
+                ['Tipo Documento', docTypeLabel(hg('document_type'))],
+                ['Numero', val(hg('document_number'))],
+                ['Rilasciato da', val(hg('document_issuer'))],
+                ['Data di Rilascio', fmtDate(hg('document_issue_date'))],
+                ['Comune di Rilascio', val(hg('document_issue_city'))],
+                ['Stato di Rilascio', val(hg('document_issue_country'))],
+            ];
+            y = renderKeyValueTable(doc, docData, MARGIN, y, CONTENT_W);
+
+            // ─── SEZIONE 4 — VEICOLO ────────────────────────────
+            if (y + 20 > 285) { y = onNewPage(); }
+            sectionTitle(doc, 'VEICOLO', MARGIN, y, CONTENT_W, [79, 70, 229]);
+            y += 7;
+            const vehData: [string, string][] = [['Targa', val(hg('license_plate'))]];
+            y = renderKeyValueTable(doc, vehData, MARGIN, y, CONTENT_W);
+
+            // ─── SEZIONE 5 — ALTRI OSPITI ───────────────────────
+            if (otherGuests.length > 0) {
+                if (y + 30 > 285) { y = onNewPage(); }
+                sectionTitle(doc, `ALTRI OSPITI (${otherGuests.length})`, MARGIN, y, CONTENT_W, [100, 116, 139]);
+                y += 7;
+
+                otherGuests.forEach((g: any, gIdx: number) => {
+                    if (y + 35 > 285) { y = onNewPage(); }
+                    doc.setFillColor(248, 250, 252);
+                    doc.setDrawColor(226, 232, 240);
+                    doc.rect(MARGIN, y, CONTENT_W, 8, 'FD');
+                    doc.setFontSize(8);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(71, 85, 105);
+                    doc.text(`${gIdx + 2}. ${val(g.first_name)} ${val(g.last_name)}`, MARGIN + 3, y + 5.5);
+                    y += 9;
+
+                    const guestData: [string, string][] = [
+                        ['Anagrafica', `${val(g.first_name)} ${val(g.last_name)} (${genderLabel(g.gender)})`],
+                        ['Nascita', `${fmtDate(g.birth_date)} - ${val(g.birth_city)} (${val(g.birth_province)}) — ${val(g.birth_country)}`],
+                        ['Cittadinanza', val(g.citizenship)],
+                    ];
+                    y = renderKeyValueTable(doc, guestData, MARGIN, y, CONTENT_W);
+                    y += 3;
+                });
             }
         }
         return y;

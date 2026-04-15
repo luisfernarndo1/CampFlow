@@ -1280,3 +1280,6 @@ Created a reusable `CheckInDialog` component that:
 - [2026-04-15 13:27]: Paginazione Settimanale per Giorno
   - *Details*: Aggiornato il report settimanale in modo che ogni giorno inizi su una nuova pagina, evitando sovrapposizioni e migliorando la leggibilità.
 
+- [2026-04-15 13:42]: Uniformità e Dettaglio Completo Report
+  - *Details*: Unificata la logica di generazione per report giornalieri e settimanali. Entrambi ora contengono TUTTI i dettagli captati (Anagrafica completa, Residenza, Documenti, Veicolo e dettagli di ogni singolo ospite).
+
