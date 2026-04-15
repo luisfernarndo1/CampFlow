@@ -3,14 +3,15 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Calendar, Settings, Info, Tent, LayoutDashboard, UserCheck, BarChart3, Users } from 'lucide-react';
+import { Calendar, Settings, Info, Tent, LayoutDashboard, UserCheck, BarChart3, Users, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Actually, looking at layout.tsx, there's no ThemeToggle imported, but ThemeProvider exists. 
 // I'll stick to the requested icons: Dashboard, Occupancy, Settings, Info.
 
 const NAV_ITEMS = [
-    // { label: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { label: 'Arrivi', href: '/arrivals', icon: ArrowDownCircle },
+    { label: 'Partenze', href: '/departures', icon: ArrowUpCircle },
     { label: 'Vista Occupazione', href: '/occupancy', icon: Calendar },
     { label: 'Check-in', href: '/checkin', icon: UserCheck },
     { label: 'Clienti', href: '/customers', icon: Users },
@@ -47,24 +48,29 @@ export function Header() {
 
                 {/* Navigation */}
                 <nav className="flex items-center gap-1 md:gap-2">
-                    {NAV_ITEMS.map((item) => {
+                    {NAV_ITEMS.map((item, index) => {
                         const isActive = pathname === item.href;
                         const Icon = item.icon;
 
                         return (
-                            <Link key={item.href} href={item.href}>
-                                <Button
-                                    variant={isActive ? "secondary" : "ghost"}
-                                    size="sm"
-                                    className={cn(
-                                        "h-9 px-3 gap-2",
-                                        isActive && "font-medium"
-                                    )}
-                                >
-                                    <Icon className={cn("h-4 w-4", isActive ? "text-foreground" : "text-muted-foreground")} />
-                                    <span className="hidden md:inline-block">{item.label}</span>
-                                </Button>
-                            </Link>
+                            <div key={item.href} className="flex items-center">
+                                <Link href={item.href}>
+                                    <Button
+                                        variant={isActive ? "secondary" : "ghost"}
+                                        size="sm"
+                                        className={cn(
+                                            "h-9 px-3 gap-2",
+                                            isActive && "font-medium"
+                                        )}
+                                    >
+                                        <Icon className={cn("h-4 w-4", isActive ? "text-foreground" : "text-muted-foreground")} />
+                                        <span className="hidden md:inline-block">{item.label}</span>
+                                    </Button>
+                                </Link>
+                                {index === 1 && (
+                                    <div className="h-6 w-[1px] bg-border mx-1 md:mx-2" />
+                                )}
+                            </div>
                         );
                     })}
                 </nav>

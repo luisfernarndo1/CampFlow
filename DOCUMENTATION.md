@@ -1251,3 +1251,9 @@ Created a reusable `CheckInDialog` component that:
 - [2026-04-15 11:54]: Fix: Dati Residenza e Documento Capo Famiglia non Salvati
   - *Details*: Fixed two bugs causing residence and document data of the head of family to not be saved on check-in confirmation. (1) The `/api/customers/[id]` route only had `PUT` but not `PATCH` — the check-in called `PATCH`, which returned 405 silently so customer data was never updated. (2) The `/api/bookings/[id]/guests` `PUT` handler was not mapping residence and document fields in the insert payload, so those columns were always written as NULL in `booking_guests`.
   - *Tech Notes*: Added `PATCH` handler to `src/app/api/customers/[id]/route.ts`. Extended `guestsToInsert` mapping in `src/app/api/bookings/[id]/guests/route.ts` to include all residence (`address`, `residence_country`, `residence_province`, `residence_city`, `residence_zip`) and document fields (`document_type`, `document_number`, `document_issue_date`, `document_issuer`, `document_issue_city`, `document_issue_country`) and `license_plate`.
+
+- [2026-04-15 12:07]: Navigation Update
+  - *Details*: Added "Arrivi" (Arrivals) and "Partenze" (Departures) to the main navigation header.
+  - *Layout Update*: Reordered items to place Arrivals and Departures as the first two items on the left.
+  - *Tech Notes*: Modified `src/components/layout/Header.tsx`. Added a vertical separator (`bg-border`) after the first two items to distinguish operational tasks from general management sections.
+
