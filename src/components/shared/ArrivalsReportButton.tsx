@@ -93,8 +93,8 @@ export function ArrivalsReportButton() {
             doc.setFontSize(11);
             doc.setTextColor(100, 100, 100);
             doc.text('Nessun arrivo previsto per questa data.', MARGIN, y + 10);
-            const fnameObj = format(parsedDate, 'dd_MMMM_yyyy', { locale: it }).toLowerCase();
-            doc.save(`arrivi_${fnameObj}.pdf`);
+            const fnameObj = format(parsedDate, 'dd MMMM yyyy', { locale: it }).toLowerCase();
+            doc.save(`arrivi ${fnameObj}.pdf`);
             return;
         }
 
@@ -289,8 +289,8 @@ export function ArrivalsReportButton() {
             doc.text(`Pagina ${i} di ${totalPages}  —  Documento generato da CampFlow  —  ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, PAGE_W / 2, 292, { align: 'center' });
         }
 
-        const fnameObj = format(parsedDate, 'dd_MMMM_yyyy', { locale: it }).toLowerCase();
-        doc.save(`arrivi_${fnameObj}.pdf`);
+        const fnameObj = format(parsedDate, 'dd MMMM yyyy', { locale: it }).toLowerCase();
+        doc.save(`arrivi ${fnameObj}.pdf`);
     };
 
     return (

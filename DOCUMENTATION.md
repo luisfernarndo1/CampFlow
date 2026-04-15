@@ -1265,3 +1265,6 @@ Created a reusable `CheckInDialog` component that:
 - [2026-04-15 13:11]: Pulizia UI Arrivi
   - *Details*: Rimosso il badge "Check-in Ok" per rendere la UI più pulita, mantenendo solo il pulsante "Visualizza dati" per gli arrivi completati.
 
+- [2026-04-15 13:16]: Modifica Nome File Report
+  - *Details*: Modificato il formato del nome file PDF generato per i report arrivi: ora utilizza spazi invece di underscore (es. "arrivi 15 aprile 2026.pdf").
+
