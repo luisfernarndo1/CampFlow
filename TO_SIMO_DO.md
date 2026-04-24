@@ -73,7 +73,7 @@ Il badge verde conferma che stai vedendo dati PostgreSQL reali, identici a quell
 
 ## 🛠️ Cosa Fa la Migrazione
 
-Crea 1 funzione SQL:
+Crea 1 function SQL:
 - **Nome**: `get_storage_stats()`
 - **Scopo**: Ritorna dimensioni reali usando `pg_total_relation_size()`
 - **Sicurezza**: `SECURITY DEFINER` (sicura)

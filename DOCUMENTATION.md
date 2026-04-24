@@ -1314,3 +1314,13 @@ Moved from a "Proprietary" status to a formal **Open-Source license (AGPL v3.0)*
     - Updated `validateForm()` in `src/app/checkin/page.tsx` to comment out the mandatory check for `guest.address`.
     - Added "(facoltativo)" label to the address field in `src/app/checkin/components/GuestForm.tsx` and `src/app/customers/[id]/page.tsx`.
 
+- [2026-04-24 19:30]: Enhanced Booking Editing
+  - *Details*: Implemented the ability to edit existing bookings directly from the occupancy page. This includes modifying customer details, guest counts, notes, and the assigned pitch or tent.
+  - *Tech Notes*:
+    - **API**: Expanded `PATCH /api/bookings/[id]` to support updating all booking fields and associated customer data. Added overbooking detection (Postgres code 23P01) during updates.
+    - **UI**: 
+        - Enhanced `BookingCreationModal.tsx` with an "Edit Mode" that initializes state from existing booking data.
+        - Added a **Pitch Selector** inside the modal for reassignment.
+        - Added a "Modifica" button to `BookingDetailsDialog.tsx` to trigger the edit flow.
+    - **Caching**: Automated cache invalidation via `invalidateOccupancyCache()` upon successful update to ensure the occupancy grid reflects changes immediately.
+

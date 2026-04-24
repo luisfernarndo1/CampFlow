@@ -25,6 +25,8 @@ interface BookingCreationModalProps {
     checkIn: string;
     checkOut: string;
     onSuccess: () => void;
+    bookingId?: string;
+    initialData?: any;
 }
 
 export function BookingCreationModal({
@@ -36,7 +38,10 @@ export function BookingCreationModal({
     checkIn,
     checkOut,
     onSuccess,
+    bookingId,
+    initialData
 }: BookingCreationModalProps) {
+    const isEditMode = !!bookingId;
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [customerEmail, setCustomerEmail] = useState('');
@@ -47,12 +52,50 @@ export function BookingCreationModal({
     const [carsCount, setCarsCount] = useState(0);
     const [dogsCount, setDogsCount] = useState(0);
     const [notes, setNotes] = useState('');
+    
+    // Pitch selection state (for edit mode)
+    const [currentPitchId, setCurrentPitchId] = useState(pitchId);
+    const [allPitches, setAllPitches] = useState<any[]>([]);
+    const [loadingPitches, setLoadingPitches] = useState(false);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [childAgeMax, setChildAgeMax] = useState(12);
 
     // Autocomplete State
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+
+    // Initialize state from initialData
+    useEffect(() => {
+        if (open && initialData) {
+            setFirstName(initialData.customer?.first_name || '');
+            setLastName(initialData.customer?.last_name || '');
+            setCustomerEmail(initialData.customer?.email || '');
+            setCustomerPhone(initialData.customer?.phone || '');
+            setLicensePlate(initialData.customer?.license_plate || '');
+            setGuestsCount(initialData.guests_count || 2);
+            setChildrenCount(initialData.children_count || 0);
+            setCarsCount(initialData.cars_count || 0);
+            setDogsCount(initialData.dogs_count || 0);
+            setNotes(initialData.notes || '');
+            setSelectedCustomerId(initialData.customer_id || null);
+            setCurrentPitchId(initialData.pitch_id || pitchId);
+        } else if (open && !isEditMode) {
+            resetForm();
+            setCurrentPitchId(pitchId);
+        }
+    }, [open, initialData, isEditMode, pitchId]);
+
+    // Fetch all pitches for reassignment
+    useEffect(() => {
+        if (open && isEditMode) {
+            setLoadingPitches(true);
+            fetch('/api/pitches')
+                .then(res => res.json())
+                .then(data => setAllPitches(data.pitches || []))
+                .catch(err => console.error("Error fetching pitches:", err))
+                .finally(() => setLoadingPitches(false));
+        }
+    }, [open, isEditMode]);
 
     const nights = calculateNights(checkIn, checkOut);
 
@@ -180,7 +223,7 @@ export function BookingCreationModal({
         }
     };
 
-    const handleCreateBooking = async () => {
+    const handleSaveBooking = async () => {
         if (!firstName.trim()) {
             toast.error('Dati mancanti', { description: 'Il nome del cliente è obbligatorio' });
             return;
@@ -202,14 +245,15 @@ export function BookingCreationModal({
 
         try {
             const payload = {
-                pitch_id: pitchId,
+                pitch_id: currentPitchId,
                 check_in: checkIn,
                 check_out: checkOut,
-                guests_count: guestsCount + childrenCount, // Total people for booking table logic
-                children_count: childrenCount, // Store specifically if DB supports checks
+                guests_count: guestsCount + childrenCount,
+                children_count: childrenCount,
                 dogs_count: dogsCount,
-                cars_count: carsCount, // Store specifically if DB supports checks
+                cars_count: carsCount,
                 notes: notes,
+                total_price: totalPrice,
                 customer: {
                     first_name: firstName,
                     last_name: lastName,
@@ -221,19 +265,22 @@ export function BookingCreationModal({
                 },
             };
 
-            if (selectedCustomerId) {
+            const url = isEditMode ? `/api/bookings/${bookingId}` : '/api/bookings';
+            const method = isEditMode ? 'PATCH' : 'POST';
+
+            if (!isEditMode && selectedCustomerId) {
                 (payload as any).customer_id = selectedCustomerId;
             }
 
-            const bookingRes = await fetch('/api/bookings', {
-                method: 'POST',
+            const bookingRes = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
 
             if (!bookingRes.ok) {
                 const error = await bookingRes.json();
-                throw new Error(error.error || 'Failed to create booking');
+                throw new Error(error.error || `Failed to ${isEditMode ? 'update' : 'create'} booking`);
             }
 
             setSuccess(true);
@@ -242,13 +289,15 @@ export function BookingCreationModal({
             setTimeout(() => {
                 onSuccess();
                 onClose();
-                resetForm();
+                if (!isEditMode) resetForm();
                 setSelectedCustomerId(null);
             }, 1000);
 
         } catch (error) {
-            console.error('Error creating booking:', error);
-            toast.error("Errore prenotazione", { description: error instanceof Error ? error.message : "Errore durante la creazione della prenotazione" });
+            console.error(`Error ${isEditMode ? 'updating' : 'creating'} booking:`, error);
+            toast.error(`Errore ${isEditMode ? 'modifica' : 'prenotazione'}`, { 
+                description: error instanceof Error ? error.message : "Errore durante il salvataggio" 
+            });
         } finally {
             setLoading(false);
         }
@@ -285,7 +334,7 @@ export function BookingCreationModal({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Calendar className="h-5 w-5" />
-                        Nuova Prenotazione - Piazzola {pitchNumber}
+                        {isEditMode ? 'Modifica Prenotazione' : `Nuova Prenotazione - Piazzola ${pitchNumber}`}
                     </DialogTitle>
                     <DialogDescription>
                         <span className="flex items-center gap-2 mt-2">
@@ -304,21 +353,47 @@ export function BookingCreationModal({
                         <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
                             <Check className="h-8 w-8 text-green-600 dark:text-green-400" />
                         </div>
-                        <h3 className="text-lg font-semibold mb-2">Prenotazione Creata!</h3>
+                        <h3 className="text-lg font-semibold mb-2">{isEditMode ? 'Prenotazione Aggiornata!' : 'Prenotazione Creata!'}</h3>
                         <p className="text-sm text-muted-foreground">
                             La prenotazione è stata salvata con successo.
                         </p>
                     </div>
                 ) : (
                     <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label>Cerca o Inserisci Cliente</Label>
-                            <CustomerAutocomplete
-                                onSelect={handleCustomerSelect}
-                                onClear={() => setSelectedCustomerId(null)}
-                                selectedCustomerId={selectedCustomerId || undefined}
-                            />
-                        </div>
+                        {!isEditMode && (
+                            <div className="space-y-2">
+                                <Label>Cerca o Inserisci Cliente</Label>
+                                <CustomerAutocomplete
+                                    onSelect={handleCustomerSelect}
+                                    onClear={() => setSelectedCustomerId(null)}
+                                    selectedCustomerId={selectedCustomerId || undefined}
+                                />
+                            </div>
+                        )}
+
+                        {isEditMode && (
+                            <div className="space-y-2">
+                                <Label htmlFor="pitch-select">Assegnazione Piazzola/Tenda</Label>
+                                <div className="grid grid-cols-1 gap-2">
+                                    <select
+                                        id="pitch-select"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={currentPitchId}
+                                        onChange={(e) => setCurrentPitchId(e.target.value)}
+                                        disabled={loading}
+                                    >
+                                        <option value="" disabled>Seleziona una piazzola</option>
+                                        {allPitches
+                                            .sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true }))
+                                            .map((p) => (
+                                                <option key={p.id} value={p.id}>
+                                                    {p.type === 'piazzola' ? 'Piazzola' : 'Tenda'} {p.number} ({p.sector?.name || p.type})
+                                                </option>
+                                            ))}
+                                    </select>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="relative">
                             <div className="absolute inset-0 flex items-center">
@@ -533,9 +608,9 @@ export function BookingCreationModal({
                         <Button variant="outline" onClick={handleClose} disabled={loading}>
                             Annulla
                         </Button>
-                        <Button onClick={handleCreateBooking} disabled={!firstName.trim() || !lastName.trim() || loading}>
+                        <Button onClick={handleSaveBooking} disabled={!firstName.trim() || !lastName.trim() || loading}>
                             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                            Crea Prenotazione
+                            {isEditMode ? 'Salva Modifiche' : 'Crea Prenotazione'}
                         </Button>
                     </DialogFooter>
                 )}
