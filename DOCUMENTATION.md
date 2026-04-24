@@ -1314,6 +1314,14 @@ Moved from a "Proprietary" status to a formal **Open-Source license (AGPL v3.0)*
     - Updated `validateForm()` in `src/app/checkin/page.tsx` to comment out the mandatory check for `guest.address`.
     - Added "(facoltativo)" label to the address field in `src/app/checkin/components/GuestForm.tsx` and `src/app/customers/[id]/page.tsx`.
 
+- [2026-04-24 17:42]: Git Sync & Conflict Resolution
+  - *Details*: Synchronized local repository with remote (40 commits pulled, 3 commits pushed). Resolved merge conflicts in `DOCUMENTATION.md`, `TO_SIMO_DO.md`, `GuestForm.tsx`, `CustomerDetailPage`, and `BookingCreationModal.tsx`.
+  - *Tech Notes*: Used `git pull --rebase` to maintain a linear history. Carefully merged local functional changes (optional address, dynamic pitch selection) with remote architectural/styling updates.
+
+- [2026-04-24 17:43]: Environment Fix & Successful Build
+  - *Details*: Resolved "Module not found" errors during build by installing missing dependencies listed in `package.json` (`@radix-ui/react-alert-dialog`, `@radix-ui/react-select`, `jspdf`).
+  - *Action*: Executed `npm install` and verified with a full `npm run build`.
+
 - [2026-04-24 19:35]: Enhanced Booking Editing & Availability-Aware Reassignment
   - *Details*: Implemented the ability to edit existing bookings directly from the occupancy page, including date modifications and intelligent pitch reassignment.
   - *Tech Notes*:
