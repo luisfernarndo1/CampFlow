@@ -332,7 +332,7 @@ export function CheckInDialog({ open, onOpenChange, booking, event, onClose, onS
 
     // Customer info (support both formats)
     const customer = currentBooking?.customer || currentBooking?.customers || event?.customers || {};
-    const customerName = `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim() || 'Ospite';
+    const customerName = `${customer?.last_name || ''} ${customer?.first_name || ''}`.trim() || 'Ospite';
 
     // Pitch info
     const pitchNumber = currentBooking?.pitch?.number || event?.pitches?.number || '?';

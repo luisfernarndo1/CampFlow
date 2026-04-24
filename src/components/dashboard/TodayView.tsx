@@ -101,7 +101,7 @@ export function TodayView() {
                                                     Piazzola {arrival.pitches.number}
                                                 </Badge>
                                                 <div>
-                                                    <p className="font-medium text-sm">{`${arrival.customers.first_name} ${arrival.customers.last_name}`}</p>
+                                                    <p className="font-medium text-sm">{`${arrival.customers.last_name} ${arrival.customers.first_name}`}</p>
                                                     <p className="text-xs text-muted-foreground">
                                                         {arrival.guests_count} {arrival.guests_count === 1 ? 'ospite' : 'ospiti'}
                                                     </p>
@@ -142,7 +142,7 @@ export function TodayView() {
                                                     Piazzola {departure.pitches.number}
                                                 </Badge>
                                                 <div>
-                                                    <p className="font-medium text-sm">{`${departure.customers.first_name} ${departure.customers.last_name}`}</p>
+                                                    <p className="font-medium text-sm">{`${departure.customers.last_name} ${departure.customers.first_name}`}</p>
                                                     <p className="text-xs text-muted-foreground">
                                                         {departure.guests_count} {departure.guests_count === 1 ? 'ospite' : 'ospiti'}
                                                     </p>

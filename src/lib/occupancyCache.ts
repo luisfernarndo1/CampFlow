@@ -1,6 +1,6 @@
 
 
-const CACHE_KEY_PREFIX = 'occupancy_cache_v4_';
+const CACHE_KEY_PREFIX = 'occupancy_cache_v5_';
 const CACHE_VERSION_KEY = 'occupancy_cache_version';
 export const CACHE_WINDOW_DAYS = 45;
 

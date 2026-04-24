@@ -95,7 +95,7 @@ export function GlobalSearchBar() {
                                     }}
                                 >
                                     <div className="flex flex-col">
-                                        <span className="font-medium">{`${customer.first_name} ${customer.last_name}`}</span>
+                                        <span className="font-medium">{`${customer.last_name} ${customer.first_name}`}</span>
                                         <span className="text-sm text-muted-foreground">
                                             {customer.phone}
                                             {customer.email && ` • ${customer.email}`}

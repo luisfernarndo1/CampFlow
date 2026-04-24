@@ -461,15 +461,15 @@ export function BookingCreationModal({
                             <Label>Cliente *</Label>
                             <div className="grid grid-cols-2 gap-2">
                                 <Input
-                                    placeholder="Nome"
-                                    value={firstName}
-                                    onChange={(e) => handleManualEdit('first', e.target.value)}
-                                    disabled={loading}
-                                />
-                                <Input
                                     placeholder="Cognome"
                                     value={lastName}
                                     onChange={(e) => handleManualEdit('last', e.target.value)}
+                                    disabled={loading}
+                                />
+                                <Input
+                                    placeholder="Nome"
+                                    value={firstName}
+                                    onChange={(e) => handleManualEdit('first', e.target.value)}
                                     disabled={loading}
                                 />
                             </div>

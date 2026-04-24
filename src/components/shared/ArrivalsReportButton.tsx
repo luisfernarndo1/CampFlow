@@ -275,7 +275,7 @@ export function ArrivalsReportButton({ defaultDate, view }: ArrivalsReportButton
         doc.setTextColor(255, 255, 255);
         doc.text(`Piaz. ${val(pitch.number)}`, MARGIN + 5, y + 8.5);
 
-        const headName = `${hg('first_name') || ''} ${hg('last_name') || ''}`.trim() || 'Cliente Sconosciuto';
+        const headName = `${hg('last_name') || ''} ${hg('first_name') || ''}`.trim() || 'Cliente Sconosciuto';
         doc.setFontSize(11);
         doc.setTextColor(15, 23, 42);
         doc.text(headName, MARGIN + 34, y + 9);
@@ -298,7 +298,7 @@ export function ArrivalsReportButton({ defaultDate, view }: ArrivalsReportButton
             doc.setFontSize(8.5);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(153, 27, 27);
-            const refLine = `Riferimento: ${val(customer.first_name)} ${val(customer.last_name)}   |   Tel: ${val(customer.phone)}   |   Email: ${val(customer.email)}`;
+            const refLine = `Riferimento: ${val(customer.last_name)} ${val(customer.first_name)}   |   Tel: ${val(customer.phone)}   |   Email: ${val(customer.email)}`;
             doc.text(refLine, MARGIN + 4, y + 16);
             y += 28;
         } else {
@@ -307,7 +307,7 @@ export function ArrivalsReportButton({ defaultDate, view }: ArrivalsReportButton
             sectionTitle(doc, 'CAPOFAMIGLIA — ANAGRAFICA', MARGIN, y, CONTENT_W, [37, 99, 235]);
             y += 7;
             const anaData: [string, string][] = [
-                ['Nome e Cognome', `${val(hg('first_name'))} ${val(hg('last_name'))}`],
+                ['Nome e Cognome', `${val(hg('last_name'))} ${val(hg('first_name'))}`],
                 ['Data di Nascita', fmtDate(hg('birth_date'))],
                 ['Sesso', genderLabel(hg('gender'))],
                 ['Luogo di Nascita', `${val(hg('birth_city'))} (${val(hg('birth_province'))}) — ${val(hg('birth_country'))}`],
@@ -363,11 +363,11 @@ export function ArrivalsReportButton({ defaultDate, view }: ArrivalsReportButton
                     doc.setFontSize(8);
                     doc.setFont('helvetica', 'bold');
                     doc.setTextColor(71, 85, 105);
-                    doc.text(`${gIdx + 2}. ${val(g.first_name)} ${val(g.last_name)}`, MARGIN + 3, y + 5.5);
+                    doc.text(`${gIdx + 2}. ${val(g.last_name)} ${val(g.first_name)}`, MARGIN + 3, y + 5.5);
                     y += 9;
 
                     const guestData: [string, string][] = [
-                        ['Anagrafica', `${val(g.first_name)} ${val(g.last_name)} (${genderLabel(g.gender)})`],
+                        ['Anagrafica', `${val(g.last_name)} ${val(g.first_name)} (${genderLabel(g.gender)})`],
                         ['Nascita', `${fmtDate(g.birth_date)} - ${val(g.birth_city)} (${val(g.birth_province)}) — ${val(g.birth_country)}`],
                         ['Cittadinanza', val(g.citizenship)],
                     ];

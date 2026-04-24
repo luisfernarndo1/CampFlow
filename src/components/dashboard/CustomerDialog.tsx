@@ -125,20 +125,20 @@ export function CustomerDialog({ customer, open, onClose, onSuccess }: CustomerD
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="first_name">Nome *</Label>
-                            <Input
-                                id="first_name"
-                                value={formData.first_name}
-                                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
                             <Label htmlFor="last_name">Cognome *</Label>
                             <Input
                                 id="last_name"
                                 value={formData.last_name}
                                 onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="first_name">Nome *</Label>
+                            <Input
+                                id="first_name"
+                                value={formData.first_name}
+                                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                                 required
                             />
                         </div>
