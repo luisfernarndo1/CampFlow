@@ -7,9 +7,13 @@ import {
     clearSeasonsAction,
     seedPitchesAction,
     seedSeasonsAction,
-    resetSystemAction
+    resetSystemAction,
+    generateBackupAction
 } from '../login/actions';
 import DestructiveActionDialog from './DestructiveActionDialog';
+import { useState } from 'react';
+import { Download, Loader2, CheckSquare, Square } from 'lucide-react';
+
 
 function ActionCard({ title, desc, icon, children }: { title: string, desc: string, icon: string, children: React.ReactNode }) {
     return (
@@ -43,7 +47,80 @@ function ActionButton({ label, theme = 'gray' }: { label: string, theme?: 'red' 
 }
 
 export default function DatabaseManagerWidget() {
+    const [isBackingUp, setIsBackingUp] = useState(false);
+    const [selectedTables, setSelectedTables] = useState<string[]>([
+        'customers',
+        'bookings',
+        'booking_guests',
+        'pitches',
+        'sectors',
+        'pricing_seasons',
+        'customer_groups',
+        'group_season_configuration',
+        'group_bundles',
+        'app_logs'
+    ]);
+
+    const allAvailableTables = [
+        'customers',
+        'bookings',
+        'booking_guests',
+        'pitches',
+        'sectors',
+        'pricing_seasons',
+        'customer_groups',
+        'group_season_configuration',
+        'group_bundles',
+        'app_logs'
+    ];
+
+    const handleBackup = async () => {
+        if (selectedTables.length === 0) {
+            alert('Please select at least one table to backup.');
+            return;
+        }
+        setIsBackingUp(true);
+        try {
+            const result = await generateBackupAction(selectedTables);
+            if (result.success && result.backup) {
+                const blob = new Blob([JSON.stringify(result.backup, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const tablesLabel = selectedTables.length === allAvailableTables.length ? 'full' : 'partial';
+                a.download = `campflow_backup_${tablesLabel}_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } else {
+                alert('Backup failed: ' + (result.error || 'Unknown error'));
+            }
+        } catch (error: any) {
+            alert('Backup failed: ' + error.message);
+        } finally {
+            setIsBackingUp(false);
+        }
+    };
+
+    const toggleTable = (table: string) => {
+        setSelectedTables(prev =>
+            prev.includes(table)
+                ? prev.filter(t => t !== table)
+                : [...prev, table]
+        );
+    };
+
+    const toggleAll = () => {
+        if (selectedTables.length === allAvailableTables.length) {
+            setSelectedTables([]);
+        } else {
+            setSelectedTables(allAvailableTables);
+        }
+    };
+
     return (
+
         <div className="space-y-6">
             <h2 className="text-gray-400 font-semibold uppercase text-xs tracking-wider flex items-center gap-2">
                 <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
@@ -131,7 +208,61 @@ export default function DatabaseManagerWidget() {
                         theme="green"
                         trigger={<ActionButton label="Seed Seasons" theme="green" />}
                     />
+
+                    <div className="pt-2 border-t border-gray-800 mt-2 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Select Tables</span>
+                            <button
+                                onClick={toggleAll}
+                                className="text-[9px] text-blue-400 hover:text-blue-300 underline"
+                            >
+                                {selectedTables.length === allAvailableTables.length ? 'Deselect All' : 'Select All'}
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-1 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
+                            {allAvailableTables.map(table => (
+                                <label
+                                    key={table}
+                                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-800/50 p-1 rounded group transition-colors"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedTables.includes(table)}
+                                        onChange={() => toggleTable(table)}
+                                        className="hidden"
+                                    />
+                                    {selectedTables.includes(table) ? (
+                                        <CheckSquare className="h-3 w-3 text-blue-500" />
+                                    ) : (
+                                        <Square className="h-3 w-3 text-gray-600 group-hover:text-gray-400" />
+                                    )}
+                                    <span className={`text-[10px] truncate ${selectedTables.includes(table) ? 'text-gray-300' : 'text-gray-500'}`}>
+                                        {table}
+                                    </span>
+                                </label>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={handleBackup}
+                            disabled={isBackingUp || selectedTables.length === 0}
+                            className={`w-full py-2 px-3 rounded border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2
+                                ${isBackingUp || selectedTables.length === 0
+                                    ? 'bg-gray-800 text-gray-500 border-gray-700 opacity-50 cursor-not-allowed'
+                                    : 'text-blue-400 border-blue-500/30 hover:bg-blue-500/10'}`}
+                        >
+                            {isBackingUp ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                                <Download className="h-3 w-3" />
+                            )}
+                            {isBackingUp ? 'Generating...' : `Backup ${selectedTables.length} Tables`}
+                        </button>
+                    </div>
                 </div>
+
+
 
                 {/* 4. Danger Zone */}
                 <div className="space-y-4">

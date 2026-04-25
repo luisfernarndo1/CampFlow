@@ -221,3 +221,58 @@ export async function seedSeasonsAction() {
         return { success: false, error: error.message };
     }
 }
+
+export async function generateBackupAction(selectedTables?: string[]) {
+    const isAuthed = await getAuthStatus();
+    if (!isAuthed) throw new Error('Unauthorized');
+
+    const supabase = supabaseAdmin;
+
+    try {
+        const allTables = [
+            'customers',
+            'bookings',
+            'booking_guests',
+            'pitches',
+            'sectors',
+            'pricing_seasons',
+            'customer_groups',
+            'group_season_configuration',
+            'group_bundles',
+            'app_logs'
+        ];
+
+        const tablesToBackup = selectedTables && selectedTables.length > 0 
+            ? selectedTables.filter(t => allTables.includes(t))
+            : allTables;
+
+        const backupData: Record<string, any> = {
+            timestamp: new Date().toISOString(),
+            version: '1.0',
+            tables_included: tablesToBackup,
+            data: {}
+        };
+
+        for (const table of tablesToBackup) {
+            // Check if table exists by trying to select 0 rows
+            const { error: checkError } = await supabase.from(table).select('id').limit(0);
+            if (checkError) {
+                console.warn(`Table ${table} might not exist or is not accessible:`, checkError.message);
+                continue;
+            }
+
+            const { data, error } = await supabase.from(table).select('*');
+            if (error) {
+                console.warn(`Could not backup table ${table}:`, error.message);
+                continue;
+            }
+            backupData.data[table] = data;
+        }
+
+        return { success: true, backup: backupData };
+    } catch (error: any) {
+        console.error('Backup generation failed:', error);
+        return { success: false, error: error.message };
+    }
+}
+
