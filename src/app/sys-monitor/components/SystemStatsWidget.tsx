@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import { 
     Database, 
     Users, 
@@ -5,8 +8,13 @@ import {
     MapPin, 
     History, 
     CheckCircle2, 
-    AlertCircle 
+    AlertCircle,
+    RefreshCw,
+    Clock
 } from 'lucide-react';
+import { fetchStatsAction } from '../login/actions';
+import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
 
 type StatsData = {
     sizeBytes: number | null;
@@ -15,7 +23,10 @@ type StatsData = {
     logs: number;
     pitches: number;
     source: 'rpc' | 'fallback';
+    timestamp?: string;
 };
+
+const CACHE_KEY = 'campflow_sys_stats_cache';
 
 function StatCard({ 
     label, 
@@ -58,20 +69,92 @@ function formatBytes(bytes: number) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-export default function SystemStatsWidget({ stats }: { stats: StatsData }) {
+export default function SystemStatsWidget({ initialStats }: { initialStats?: StatsData }) {
+    const [stats, setStats] = useState<StatsData | null>(initialStats || null);
+    const [loading, setLoading] = useState(!initialStats);
+    const [isStale, setIsStale] = useState(false);
+
+    const refreshData = async () => {
+        setLoading(true);
+        try {
+            const result = await fetchStatsAction();
+            if (result.success && result.data) {
+                const newData = result.data as StatsData;
+                setStats(newData);
+                setIsStale(false);
+                localStorage.setItem(CACHE_KEY, JSON.stringify(newData));
+            } else {
+                throw new Error('Fetch failed');
+            }
+        } catch (err) {
+            console.error('Failed to refresh telemetry:', err);
+            setIsStale(true);
+            // Try to load from localStorage if state is empty
+            if (!stats) {
+                const cached = localStorage.getItem(CACHE_KEY);
+                if (cached) setStats(JSON.parse(cached));
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        // 1. Check if we have cached data in localStorage on mount
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached && !initialStats) {
+            setStats(JSON.parse(cached));
+            setIsStale(true); // Mark as stale until refreshed
+        }
+        
+        // 2. Initial Refresh
+        refreshData();
+    }, []);
+
+    if (!stats) {
+        return (
+            <div className="mb-10 p-12 bg-gray-900/20 border border-gray-800 rounded-2xl flex flex-col items-center justify-center gap-4 text-gray-500">
+                <RefreshCw className="h-8 w-8 animate-spin opacity-20" />
+                <p className="text-xs font-bold uppercase tracking-widest">Initializing Telemetry Engine...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="mb-10">
-            <div className="flex items-center justify-between mb-6 px-1">
-                <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500 flex items-center gap-3">
-                    <Database className="h-4 w-4" />
-                    Database telemetry
-                </h2>
-                <div className={`flex items-center gap-2 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest
-                    ${stats.source === 'rpc' 
-                        ? 'bg-green-500/10 border-green-500/20 text-green-400' 
-                        : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'}`}>
-                    {stats.source === 'rpc' ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
-                    MODE: {stats.source.toUpperCase()}
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 px-1 gap-4">
+                <div className="flex items-center gap-3">
+                    <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-3">
+                        <Database className="h-4 w-4" />
+                        Database telemetry
+                    </h2>
+                    {loading && <RefreshCw className="h-3 w-3 animate-spin text-blue-500" />}
+                </div>
+
+                <div className="flex items-center gap-3">
+                    {stats.timestamp && (
+                        <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/5 text-[9px] font-bold text-gray-500">
+                            <Clock className="h-3 w-3" />
+                            UPDATED: {format(new Date(stats.timestamp), 'HH:mm:ss', { locale: it })}
+                            {isStale && <span className="text-orange-500 ml-1">(CACHED)</span>}
+                        </div>
+                    )}
+                    
+                    <button 
+                        onClick={refreshData}
+                        disabled={loading}
+                        className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-gray-500 hover:text-white disabled:opacity-50"
+                    >
+                        <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
+
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest
+                        ${stats.source === 'rpc' 
+                            ? 'bg-green-500/10 border-green-500/20 text-green-400' 
+                            : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'}`}>
+                        {stats.source === 'rpc' ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                        MODE: {stats.source.toUpperCase()}
+                    </div>
                 </div>
             </div>
 

@@ -276,3 +276,69 @@ export async function generateBackupAction(selectedTables?: string[]) {
     }
 }
 
+
+export async function fetchStatsAction() {
+    const isAuthed = await getAuthStatus();
+    if (!isAuthed) throw new Error('Unauthorized');
+
+    const supabase = supabaseAdmin;
+    let totalSize: number | null = null;
+    let counts = {
+        customers: 0,
+        bookings: 0,
+        logs: 0,
+        pitches: 0
+    };
+    let source: 'rpc' | 'fallback' = 'fallback';
+
+    try {
+        const { data: storageData } = await supabase.rpc('get_storage_stats');
+        if (storageData && Array.isArray(storageData)) {
+            totalSize = storageData.reduce((acc, curr: any) => acc + (Number(curr.total_size_bytes) || 0), 0);
+        }
+
+        const { data: dbStats, error: rpcError } = await supabase.rpc('get_db_stats');
+        if (!rpcError && dbStats) {
+            const stats = Array.isArray(dbStats) ? dbStats[0] : dbStats;
+            if (stats) {
+                counts.bookings = Number(stats.total_bookings || stats.bookings) || 0;
+                counts.customers = Number(stats.total_customers || stats.customers) || 0;
+                counts.pitches = Number(stats.total_pitches || stats.pitches) || 0;
+                source = 'rpc';
+            }
+        }
+    } catch (e) {}
+
+    try {
+        if (source === 'fallback') {
+            const [
+                { count: customers },
+                { count: bookings },
+                { count: logs },
+                { count: pitches }
+            ] = await Promise.all([
+                supabase.from('customers').select('*', { count: 'exact', head: true }),
+                supabase.from('bookings').select('*', { count: 'exact', head: true }),
+                supabase.from('app_logs').select('*', { count: 'exact', head: true }),
+                supabase.from('pitches').select('*', { count: 'exact', head: true })
+            ]);
+            counts.customers = customers || 0;
+            counts.bookings = bookings || 0;
+            counts.logs = logs || 0;
+            counts.pitches = pitches || 0;
+        } else {
+            const { count: logsCount } = await supabase.from('app_logs').select('*', { count: 'exact', head: true });
+            counts.logs = logsCount || 0;
+        }
+    } catch (e) {}
+
+    return {
+        success: true,
+        data: {
+            sizeBytes: totalSize,
+            ...counts,
+            source,
+            timestamp: new Date().toISOString()
+        }
+    };
+}
