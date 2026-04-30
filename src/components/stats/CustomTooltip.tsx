@@ -18,10 +18,11 @@ const getColor = (item: any) => {
     if (typeof color === 'string' && color.startsWith('url')) {
         if (name.includes('piazzola')) return '#ea580c';
         if (name.includes('tenda')) return '#02c01eff';
-        return 'hsl(var(--primary))';
+        if (name.includes('ricavi')) return 'var(--primary)';
+        return 'var(--primary)';
     }
     
-    return color || 'hsl(var(--primary))';
+    return color || 'var(--primary)';
 };
 
 export function CustomTooltip({ active, payload, label, valuePrefix = "", isCurrency = false }: CustomTooltipProps) {
