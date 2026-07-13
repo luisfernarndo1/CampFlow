@@ -227,3 +227,9 @@ Resolved via /grill-me. Implementation pending (DB regen first, then code).
 - **N-3** (code): removed the dead `guest_names` insert path in POST /api/bookings and the unused `guest_names` type field; `BookingDetailsDialog` now falls back to "Cognome Nome" when `full_name` is empty.
 - **B1** (DB pending): `20260623110000_drop_dead_log_functions.sql` drops `cleanup_old_logs` + `get_recent_logs`.
 - Verified: tsc clean, 18/18 tests, build OK.
+
+## [2026-07-13] Added 'Giorni di permanenza' to PDF exports
+*Details*: Added the duration of the stay (in days and nights) to the 'Stampa Arrivi' (Arrivals Report) PDF.
+*Tech Notes*: 
+- Modified `src/components/shared/ArrivalsReportButton.tsx` to parse `booking.booking_period` and calculate the duration.
+- The formatted text (e.g. "X giorni / Y notti") is displayed next to the guest count in the booking card header.

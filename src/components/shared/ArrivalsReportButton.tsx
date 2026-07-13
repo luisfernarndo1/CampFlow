@@ -281,10 +281,21 @@ export function ArrivalsReportButton({ defaultDate, view }: ArrivalsReportButton
         doc.setTextColor(15, 23, 42);
         doc.text(headName, MARGIN + 34, y + 9);
 
+        let stayText = '';
+        const periodMatch = booking.booking_period?.match(/\[([^,]+),([^)\]]+)[)\]]/);
+        if (periodMatch) {
+            const startDate = new Date(periodMatch[1]);
+            const endDate = new Date(periodMatch[2]);
+            const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+            const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const days = nights + 1;
+            stayText = `  |  ${days} giorni / ${nights} notti`;
+        }
+
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(100, 116, 139);
-        doc.text(`${booking.guests_count} ospiti`, PAGE_W - MARGIN - 2, y + 9, { align: 'right' });
+        doc.text(`${booking.guests_count} ospiti${stayText}`, PAGE_W - MARGIN - 2, y + 9, { align: 'right' });
 
         y += CARD_HEADER_H;
 
