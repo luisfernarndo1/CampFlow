@@ -320,7 +320,8 @@ export async function GET(request: NextRequest) {
         customer:customers(*),
         guests:booking_guests(*)
       `)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .limit(10000);
 
         if (status) {
             query = query.eq('status', status);

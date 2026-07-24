@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { logToDb } from '@/lib/logger-server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { getTodayItaly } from '@/lib/utils';
+import { addDays, subDays, format, parseISO } from 'date-fns';
 
 export async function GET(request: Request) {
     try {
@@ -13,6 +14,9 @@ export async function GET(request: Request) {
         let startTarget = dateParam || startDateParam || getTodayItaly();
         let endTarget = dateParam || endDateParam || startTarget;
 
+        const fetchStart = format(subDays(parseISO(startTarget), 1), 'yyyy-MM-dd');
+        const fetchEnd = format(addDays(parseISO(endTarget), 1), 'yyyy-MM-dd');
+
         // Get arrivals (bookings starting within range)
         const { data: bookings, error } = await supabaseAdmin
             .from('bookings')
@@ -23,6 +27,7 @@ export async function GET(request: Request) {
                 guests:booking_guests(*)
             `)
             .in('status', ['confirmed', 'checked_in'])
+            .filter('booking_period', 'ov', `[${fetchStart},${fetchEnd}]`)
             .order('created_at', { ascending: false });
 
         if (error) {

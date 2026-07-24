@@ -233,3 +233,10 @@ Resolved via /grill-me. Implementation pending (DB regen first, then code).
 *Tech Notes*: 
 - Modified `src/components/shared/ArrivalsReportButton.tsx` to parse `booking.booking_period` and calculate the duration.
 - The formatted text (e.g. "X giorni / Y notti") is displayed next to the guest count in the booking card header.
+
+## [2026-07-24] Fix missing arrivals and departures on the Dashboard
+*Details*: Fixed a bug where only a small subset of arrivals and departures were being shown due to a default query limit of 1,000 rows.
+*Tech Notes*:
+- Modified `/api/today/route.ts` and `/api/arrivals/print/route.ts` to filter bookings directly in the database using the PostgreSQL `ov` (overlap) operator on the `booking_period` daterange column.
+- Added `subDays` and `addDays` to expand the fetched range by one day to accurately capture both arrivals (inclusive start) and departures (exclusive end) while avoiding the 1,000-row limit issue.
+- Also increased the default limit on `/api/bookings` to 10,000 to prevent the Check-in page from suffering from the same silent truncation.
